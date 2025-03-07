@@ -1,0 +1,14 @@
+gemini:
+  api_key: "your-api-key-here"  # 請替換為您的 Gemini API 金鑰
+
+chroma_host: "localhost"  # ChromaDB 主機地址
+chroma_port: 8000        # ChromaDB 端口
+
+collection_name: "documents"  # 文檔集合名稱
+
+# 文本分割設置
+chunk_size: 2000      # 文本塊大小
+chunk_overlap: 400    # 重疊部分大小
+
+# 嵌入模型設置
+embedding_model: "shibing624/text2vec-base-chinese"  # 使用的嵌入模型 

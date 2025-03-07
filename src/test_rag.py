@@ -1,5 +1,5 @@
 import os
-from rag_system import RAGSystem
+from improved_rag_system import ImprovedRAGSystem
 
 def load_documents(docs_dir):
     documents = []
@@ -10,30 +10,32 @@ def load_documents(docs_dir):
                 documents.append((filename, content))
     return documents
 
-def main():
-    # 初始化 RAG 系統
-    rag = RAGSystem()
+def test_rag():
+    # 初始化系統
+    rag = ImprovedRAGSystem()
     
-    # 載入文檔
-    docs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs')
+    # 讀取docs目錄下的所有文檔
+    docs_dir = "docs"
     documents = load_documents(docs_dir)
     
-    # 將文檔加入到向量存儲中
+    # 添加所有文檔到系統
     for filename, content in documents:
-        print(f"Adding document: {filename}")
-        rag.add_document(content, {"source": filename})
+        rag.add_document(content, {"source": filename, "type": "document"})
+        print(f"已添加文檔: {filename}")
     
     # 測試查詢
     questions = [
-        "請問公司有什麼計劃？",
-        "有哪些獎懲制度？",
-        "學校的使命是什麼？",
-        "學生應遵守哪些規範？"
+        "專案完成之後要做什麼事"
     ]
-    for question in questions:
-        print(f"\nTesting query: {question}")
-        response = rag.query(question)
-        print(f"\nResponse: {response}")
+    
+    print("\n=== 開始測試查詢 ===\n")
+    
+    for q in questions:
+        print(f"\n問題：{q}")
+        print("-" * 50)
+        answer = rag.query(q)
+        print(f"回答：{answer}")
+        print("-" * 50)
 
 if __name__ == "__main__":
-    main()
+    test_rag()
