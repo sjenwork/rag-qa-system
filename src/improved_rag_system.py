@@ -186,54 +186,86 @@ class ImprovedRAGSystem:
             logger.error(f"添加文档失败: {str(e)}")
             raise
     
-    def query(self, question: str, k: int = 3) -> str:
+    def query(self, question: str, k: int = 3, max_context_length: int = 1000) -> str:
         """
-        查询文档并生成回答
+        查詢文檔並生成回答
         
         Args:
-            question: 查询问题
-            k: 返回的相似文档数量
+            question: 查詢問題
+            k: 返回的相似文檔數量
+            max_context_length: 最大上下文長度
             
         Returns:
             生成的回答
         """
         try:
-            # 生成问题的嵌入向量
+            # 生成問題的嵌入向量
             question_embedding = self.embed_text(question)
             
-            # 搜索相似块
+            # 搜索相似塊
             results = self.collection.query(
                 query_embeddings=[question_embedding],
                 n_results=k,
-                include=['documents', 'metadatas']
+                include=['documents', 'metadatas', 'distances']
             )
             
             if not results['documents'][0]:
-                logger.warning("未找到相关文档")
-                return "抱歉，我在文档中找不到相关的信息。"
+                logger.warning("未找到相關文檔")
+                return "抱歉，我在文檔中找不到相關的資訊。"
             
-            # 创建提示
-            context = "\n".join(results['documents'][0])
-            sources = [m.get('source', 'unknown') for m in results['metadatas'][0]]
-            sources_str = "\n".join([f"- {s}" for s in set(sources)])
+            # 根據相關度分數過濾和排序文本塊
+            chunks_with_scores = list(zip(
+                results['documents'][0],
+                results['distances'][0],
+                results['metadatas'][0]
+            ))
+            # 按相關度排序（距離越小越相關）
+            chunks_with_scores.sort(key=lambda x: x[1])
             
-            prompt = f"""基于以下的内容，请用中文回答这个问题：
+            # 構建上下文，確保不超過最大長度
+            context_parts = []
+            current_length = 0
+            used_sources = set()
+            
+            for chunk, distance, metadata in chunks_with_scores:
+                # 如果距離太大（相關度太低），跳過
+                if distance > 0.8:  # 可配置的閾值
+                    continue
+                    
+                chunk_length = len(chunk)
+                if current_length + chunk_length <= max_context_length:
+                    context_parts.append(chunk)
+                    current_length += chunk_length
+                    if 'source' in metadata:
+                        used_sources.add(metadata['source'])
+                else:
+                    break
+            
+            if not context_parts:
+                logger.warning("沒有找到足夠相關的文本")
+                return "抱歉，我在文檔中找不到足夠相關的資訊。"
+            
+            # 創建提示
+            context = "\n---\n".join(context_parts)
+            sources_str = "\n".join([f"- {s}" for s in used_sources])
+            
+            prompt = f"""基於以下的內容，請用中文回答這個問題：
 
-内容：
+內容：
 {context}
 
-问题：{question}
+問題：{question}
 
-请根据提供的内容来回答，如果内容中没有相关信息，请直接说明找不到相关信息。
+請根據提供的內容來回答，如果內容中沒有相關資訊，請直接說明找不到相關資訊。
 
-参考来源：
+參考來源：
 {sources_str}"""
             
-            logger.info(f"生成回答 (k={k}, sources={len(set(sources))})")
-            # 使用Gemini生成回答
+            logger.info(f"生成回答 (k={k}, 使用的文本塊數={len(context_parts)}, 來源數={len(used_sources)})")
+            # 使用 Gemini 生成回答
             response = self.model.generate_content(prompt)
             return response.text
             
         except Exception as e:
-            logger.error(f"查询处理失败: {str(e)}")
+            logger.error(f"查詢處理失敗: {str(e)}")
             raise 
