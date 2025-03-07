@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG 系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.4.1/dist/typography.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .markdown-body {
+            @apply prose max-w-none;
+        }
+        .markdown-body h1 { @apply text-2xl font-bold mb-4; }
+        .markdown-body h2 { @apply text-xl font-bold mb-3; }
+        .markdown-body h3 { @apply text-lg font-bold mb-2; }
+        .markdown-body p { @apply mb-4; }
+        .markdown-body ul { @apply list-disc pl-5 mb-4; }
+        .markdown-body ol { @apply list-decimal pl-5 mb-4; }
+        .markdown-body li { @apply mb-1; }
+        .markdown-body code { @apply bg-gray-100 px-1 rounded; }
+        .markdown-body pre { @apply bg-gray-100 p-4 rounded mb-4; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold mb-8 text-center text-gray-800">RAG 文檔問答系統</h1>
+        
+        <!-- 文檔列表 -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">文檔列表</h2>
+            <div id="documents" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- 文檔卡片將在這裡動態生成 -->
+            </div>
+        </div>
+
+        <!-- 上傳文檔 -->
+        <div class="mb-8 p-6 bg-white rounded-lg shadow-md">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">上傳新文檔</h2>
+            <form id="uploadForm" class="space-y-4">
+                <div class="flex items-center space-x-4">
+                    <input type="file" id="fileInput" class="flex-1 p-2 border rounded" accept=".txt,.md,.pdf">
+                    <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors">
+                        上傳
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 問答區域 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">提問</h2>
+            <form id="queryForm" class="space-y-4">
+                <div class="mb-4">
+                    <label for="question" class="block text-sm font-medium text-gray-700">問題</label>
+                    <textarea id="question" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label for="similarity" class="block text-sm font-medium text-gray-700">
+                        相似度閾值: <span id="similarityValue">0.7</span>
+                    </label>
+                    <input type="range" id="similarity" name="similarity" 
+                           min="0.5" max="0.95" step="0.05" value="0.7"
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-xs text-gray-500">
+                        <span>寬鬆 (0.5)</span>
+                        <span>嚴格 (0.95)</span>
+                    </div>
+                </div>
+
+                <button id="submitQuestion" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">提交問題</button>
+            </form>
+            <div id="answer" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
+                <h3 class="font-semibold text-lg mb-2">回答：</h3>
+                <div id="answerText" class="markdown-body"></div>
+                <div id="sources" class="mt-4 text-sm text-gray-600">
+                    <h4 class="font-semibold mb-2">來源文檔：</h4>
+                    <ul id="sourcesList" class="list-disc pl-5 space-y-1"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 刪除文檔對話框 -->
+    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-96">
+            <h3 class="text-xl font-semibold mb-4">確認刪除</h3>
+            <p class="mb-4">請輸入管理員密碼以刪除文檔：</p>
+            <input type="password" id="adminPassword" class="w-full p-2 border rounded mb-4" placeholder="管理員密碼">
+            <div class="flex justify-end space-x-4">
+                <button onclick="closeDeleteModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                    取消
+                </button>
+                <button onclick="confirmDelete()" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                    確認刪除
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFileToDelete = null;
+
+        // 載入文檔列表
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/documents');
+                const documents = await response.json();
+                const container = document.getElementById('documents');
+                container.innerHTML = documents.map(doc => `
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-lg font-medium text-gray-800">${doc}</h3>
+                            <button onclick="showDeleteModal('${doc}')" class="text-red-500 hover:text-red-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                alert('載入文檔列表失敗');
+            }
+        }
+
+        // 上傳文檔
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('請選擇要上傳的文件');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert('文件上傳成功');
+                    fileInput.value = '';
+                    loadDocuments();
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || '上傳失敗');
+                }
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                alert('上傳失敗');
+            }
+        });
+
+        // 提交問題
+        document.getElementById('submitQuestion').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const question = document.getElementById('question').value.trim();
+            const similarity = parseFloat(document.getElementById('similarity').value);
+            
+            if (!question) {
+                alert('請輸入問題');
+                return;
+            }
+            
+            try {
+                const submitButton = document.getElementById('submitQuestion');
+                submitButton.disabled = true;
+                submitButton.textContent = '處理中...';
+                
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: question,
+                        similarity_threshold: similarity
+                    })
+                });
+
+                const result = await response.json();
+                const answerDiv = document.getElementById('answer');
+                const answerText = document.getElementById('answerText');
+                const sourcesList = document.getElementById('sourcesList');
+
+                // 使用 marked 解析 Markdown 並應用樣式
+                answerText.innerHTML = marked.parse(result.answer);
+                sourcesList.innerHTML = result.sources.map(source => 
+                    `<li class="hover:text-blue-600">${source}</li>`
+                ).join('');
+                
+                // 平滑顯示答案區域
+                answerDiv.classList.remove('hidden');
+                answerDiv.scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                console.error('Error querying:', error);
+                alert('查詢失敗');
+            } finally {
+                const submitButton = document.getElementById('submitQuestion');
+                submitButton.disabled = false;
+                submitButton.textContent = '提交問題';
+            }
+        });
+
+        document.getElementById('similarity').addEventListener('input', function(e) {
+            document.getElementById('similarityValue').textContent = e.target.value;
+        });
+
+        // 刪除文檔相關函數
+        function showDeleteModal(filename) {
+            currentFileToDelete = filename;
+            document.getElementById('deleteModal').classList.remove('hidden');
+            document.getElementById('adminPassword').value = '';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            currentFileToDelete = null;
+        }
+
+        async function confirmDelete() {
+            if (!currentFileToDelete) return;
+
+            const password = document.getElementById('adminPassword').value;
+            if (!password) {
+                alert('請輸入管理員密碼');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/documents/${currentFileToDelete}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `password=${encodeURIComponent(password)}`
+                });
+
+                if (response.ok) {
+                    alert('文件刪除成功');
+                    closeDeleteModal();
+                    loadDocuments();
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || '刪除失敗');
+                }
+            } catch (error) {
+                console.error('Error deleting document:', error);
+                alert('刪除失敗');
+            }
+        }
+
+        // 初始化
+        loadDocuments();
+    </script>
+</body>
+</html> 

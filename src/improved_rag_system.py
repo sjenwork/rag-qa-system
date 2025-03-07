@@ -55,7 +55,7 @@ class ImprovedRAGSystem:
         try:
             # 初始化 Gemini
             genai.configure(api_key=self.config['gemini']['api_key'])
-            self.model = genai.GenerativeModel('gemini-1.5-pro')
+            self.model = genai.GenerativeModel('gemini-1.5-pro')  # 改回 1.5 版本
             
             # 初始化 Sentence Transformer
             self.embedding_model = SentenceTransformer(
@@ -73,10 +73,10 @@ class ImprovedRAGSystem:
             
             # 初始化文本分割器
             self.text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=2000,  # 進一步增加塊大小
-                chunk_overlap=400,  # 增加重疊部分
-                length_function=len,
-                is_separator_regex=False
+                chunk_size=300,      # 更小的塊大小
+                chunk_overlap=100,   # 適當的重疊
+                separators=["\n\n", "\n", "。", "！", "？", "；", "，", " ", ""],  # 中文分隔符
+                keep_separator=True  # 保留分隔符
             )
             
             logger.info("所有组件初始化成功")
@@ -89,7 +89,7 @@ class ImprovedRAGSystem:
         """獲取或創建ChromaDB集合"""
         collection_name = self.config.get('collection_name', 'documents')
         try:
-            # 嘗試刪除現有集合
+            # 刪除現有集合（如果存在）
             try:
                 self.client.delete_collection(collection_name)
                 logger.info(f"刪除現有集合: {collection_name}")
@@ -122,20 +122,20 @@ class ImprovedRAGSystem:
     
     def embed_text(self, text: str) -> List[float]:
         """
-        使用Sentence Transformer生成文本嵌入
+        使用 Sentence Transformer 生成文本嵌入
         
         Args:
-            text: 输入文本
+            text: 輸入文本
             
         Returns:
             文本嵌入向量
         """
         try:
             logger.info(f"正在生成文本嵌入，文本長度: {len(text)}")
-            embedding = self.embedding_model.encode(text, normalize_embeddings=True)  # 正規化嵌入向量
+            embedding = self.embedding_model.encode(text, normalize_embeddings=True)
             return embedding.tolist()
         except Exception as e:
-            logger.error(f"生成文本嵌入失败: {str(e)}")
+            logger.error(f"生成文本嵌入失敗: {str(e)}")
             raise
     
     def add_document(self, text: str, metadata: Optional[Dict[str, Any]] = None) -> None:
@@ -154,24 +154,34 @@ class ImprovedRAGSystem:
             doc_hash = self.get_document_hash(text, metadata)
             metadata['doc_hash'] = doc_hash
             
-            # 检查文档是否已存在
-            existing_docs = self.collection.get(
-                where={"doc_hash": doc_hash}
-            )
+            # 检查文档是否已存在且内容相同
+            try:
+                existing_docs = self.collection.get(
+                    where={"doc_hash": doc_hash}
+                )
+                if existing_docs and existing_docs['metadatas']:
+                    logger.info(f"文档已存在且未更改 (hash: {doc_hash}), 跳过处理")
+                    return
+            except Exception as e:
+                logger.warning(f"檢查文檔存在時發生錯誤: {str(e)}")
             
-            if existing_docs and existing_docs['metadatas']:
-                logger.info(f"文档已存在 (hash: {doc_hash}), 跳过处理")
-                return
-                
             # 如果是更新，先删除旧版本
             if 'source' in metadata:
                 try:
-                    self.collection.delete(
+                    old_docs = self.collection.get(
                         where={"source": metadata['source']}
                     )
-                    logger.info(f"删除旧版本文档: {metadata['source']}")
-                except:
-                    pass
+                    if old_docs and old_docs['metadatas']:
+                        old_hash = old_docs['metadatas'][0].get('doc_hash', '')
+                        if old_hash == doc_hash:
+                            logger.info(f"文檔內容未變更 (source: {metadata['source']}), 跳過處理")
+                            return
+                        self.collection.delete(
+                            where={"source": metadata['source']}
+                        )
+                        logger.info(f"删除旧版本文档: {metadata['source']}")
+                except Exception as e:
+                    logger.warning(f"刪除舊版本時發生錯誤: {str(e)}")
             
             # 处理新文档
             chunks = self.text_splitter.split_text(text)
@@ -196,109 +206,135 @@ class ImprovedRAGSystem:
             logger.error(f"添加文档失败: {str(e)}")
             raise
     
-    def query(self, question: str, k: int = 5, max_context_length: int = 2000) -> str:
+    def query(self, query_text: str, similarity_threshold: Optional[float] = None) -> dict:
         """
-        查詢文檔並生成回答
+        查詢文檔並返回答案
         
         Args:
-            question: 查詢問題
-            k: 返回的相似文檔數量
-            max_context_length: 最大上下文長度
+            query_text: 查詢文本
+            similarity_threshold: 相似度閾值，如果為 None 則使用默認值
             
         Returns:
-            生成的回答
+            包含答案和來源的字典
         """
         try:
-            # 生成問題的嵌入向量
-            question_embedding = self.embed_text(question)
-            logger.info(f"問題: {question}")
+            # 獲取默認閾值
+            default_threshold = self.config["server"]["similarity_settings"]["default_threshold"]
+            threshold = similarity_threshold if similarity_threshold is not None else default_threshold
+            logger.info(f"使用相似度閾值: {threshold}")
             
-            # 搜索相似塊
+            # 獲取查詢的嵌入向量
+            query_embedding = self.embed_text(query_text)
+            
+            # 在 ChromaDB 中搜索相似文檔，增加檢索數量
             results = self.collection.query(
-                query_embeddings=[question_embedding],
-                n_results=k,
-                include=['documents', 'metadatas', 'distances']
+                query_embeddings=[query_embedding],
+                n_results=20,  # 增加檢索數量
+                include=["documents", "metadatas", "distances"]
             )
             
-            if not results['documents'][0]:
-                logger.warning("未找到相關文檔")
-                return "抱歉，我在文檔中找不到相關的資訊。"
+            if not results["documents"][0]:
+                logger.warning("沒有找到任何相關文檔")
+                return {"answer": "抱歉，我在文檔中找不到相關的信息。", "sources": []}
             
-            # 輸出調試信息
-            for i, (doc, dist, meta) in enumerate(zip(results['documents'][0], results['distances'][0], results['metadatas'][0])):
-                logger.info(f"匹配 {i+1}:")
-                logger.info(f"距離: {dist}")
-                logger.info(f"來源: {meta.get('source', 'unknown')}")
-                logger.info(f"文本片段: {doc[:100]}...")  # 只顯示前100個字符
+            # 計算並輸出所有檢索結果的相似度
+            all_results = []
+            max_similarity = float('-inf')
+            min_similarity = float('inf')
             
-            # 根據相關度分數過濾和排序文本塊
-            chunks_with_scores = list(zip(
-                results['documents'][0],
-                results['distances'][0],
-                results['metadatas'][0]
-            ))
-            # 按相關度排序（距離越小越相關）
-            chunks_with_scores.sort(key=lambda x: x[1])
+            # 首先找出最大和最小相似度
+            for distance in results["distances"][0]:
+                similarity = 1 - distance
+                max_similarity = max(max_similarity, similarity)
+                min_similarity = min(min_similarity, similarity)
             
-            # 構建上下文，確保不超過最大長度
-            context_parts = []
-            current_length = 0
-            used_sources = set()
+            # 計算相似度範圍
+            similarity_range = max_similarity - min_similarity
             
-            for chunk, distance, metadata in chunks_with_scores:
-                # 如果距離太大（相關度太低），跳過
-                if distance > 0.8:  # 放寬閾值
-                    continue
-                    
-                chunk_length = len(chunk)
-                if current_length + chunk_length <= max_context_length:
-                    context_parts.append(chunk)
-                    current_length += chunk_length
-                    if 'source' in metadata:
-                        used_sources.add(metadata['source'])
+            # 對相似度進行歸一化處理
+            for i, (doc, distance) in enumerate(zip(results["documents"][0], results["distances"][0])):
+                # 原始相似度
+                raw_similarity = 1 - distance
+                
+                # 歸一化相似度到 [0,1] 範圍
+                if similarity_range > 0:
+                    normalized_similarity = (raw_similarity - min_similarity) / similarity_range
                 else:
-                    break
+                    normalized_similarity = 1 if raw_similarity == max_similarity else 0
+                
+                source = results["metadatas"][0][i].get("source", "未知")
+                chunk_id = results["metadatas"][0][i].get("chunk_id", "未知")
+                
+                # 記錄詳細信息
+                all_results.append({
+                    "chunk": doc,
+                    "raw_similarity": raw_similarity,
+                    "normalized_similarity": normalized_similarity,
+                    "source": source,
+                    "chunk_id": chunk_id
+                })
+                logger.info(f"文檔 {i+1} - 原始相似度: {raw_similarity:.4f}, 歸一化相似度: {normalized_similarity:.4f}, 來源: {source}, 塊ID: {chunk_id}")
+                logger.info(f"內容片段: {doc[:100]}...")
             
-            if not context_parts:
-                logger.warning("沒有找到足夠相關的文本")
-                return "抱歉，我在文檔中找不到足夠相關的資訊。"
+            # 根據歸一化相似度排序
+            all_results.sort(key=lambda x: x["normalized_similarity"], reverse=True)
             
-            # 創建提示
-            context = "\n---\n".join(context_parts)
-            sources_str = "\n".join([f"- {s}" for s in used_sources])
+            # 使用歸一化後的相似度進行過濾
+            filtered_chunks = []
+            filtered_sources = set()
+            current_source_chunks = {}
             
-            prompt = f"""基於以下的內容，請用中文回答這個問題：
+            for result in all_results:
+                if result["normalized_similarity"] >= threshold:
+                    source = result["source"]
+                    if source not in current_source_chunks:
+                        current_source_chunks[source] = []
+                    current_source_chunks[source].append(result["chunk"])
+                    filtered_sources.add(source)
+            
+            # 對每個來源的文檔塊進行排序和合併
+            for source, chunks in current_source_chunks.items():
+                filtered_chunks.extend(chunks[:3])  # 每個來源最多使用前3個最相關的塊
+            
+            if not filtered_chunks:
+                logger.warning(f"沒有文檔通過相似度閾值 {threshold} 的過濾")
+                return {
+                    "answer": f"抱歉，沒有找到相似度高於 {threshold:.2f} 的相關文檔。請嘗試調低相似度閾值。",
+                    "sources": []
+                }
+            
+            logger.info(f"過濾後保留了 {len(filtered_chunks)} 個相關片段，來自 {len(filtered_sources)} 個文檔")
+            
+            # 構建上下文
+            context = "\n\n---\n\n".join(filtered_chunks)
+            
+            # 使用 Gemini 生成答案
+            prompt = f"""基於以下文檔內容回答問題。如果文檔內容不足以回答問題，請說明無法回答。
 
-內容：
+問題：{query_text}
+
+文檔內容：
 {context}
 
-問題：{question}
-
-請根據提供的內容來回答，如果內容中沒有相關資訊，請直接說明找不到相關資訊。
-
-參考來源：
-{sources_str}"""
+請根據上述文檔內容提供準確、簡潔的回答。如果內容相關性不夠，請明確指出。
+如果找到相關內容，請盡可能完整地回答問題。"""
             
-            logger.info(f"生成回答 (k={k}, 使用的文本塊數={len(context_parts)}, 來源數={len(used_sources)})")
-            # 使用 Gemini 生成回答
+            logger.info("發送到 Gemini 的提示詞：")
+            logger.info(prompt)
+            
             try:
                 response = self.model.generate_content(prompt)
-                return response.text
+                answer = response.text
+                logger.info(f"Gemini 返回的答案：{answer}")
             except Exception as e:
-                logger.error(f"生成回答失敗: {str(e)}")
-                # 返回找到的相關內容
-                return f"""根據文檔內容，專案完成後需要做以下事項：
-
-1. 向業主索取完工證明，正本交由管理部留存。
-2. 整理一份內部結案報告，包含：
-   - 300字以內的摘要
-   - 5張圖片或照片
-   - 將報告Email給電腦管理員(夏名瑾)
-   
-這些步驟是為了更新官網的業績內容。
-
-參考來源：{sources_str}"""
+                logger.error(f"Gemini API 調用失敗: {str(e)}")
+                answer = "抱歉，生成答案時出現錯誤。"
+            
+            return {
+                "answer": answer,
+                "sources": list(filtered_sources)
+            }
             
         except Exception as e:
             logger.error(f"查詢處理失敗: {str(e)}")
-            raise 
+            return {"answer": "抱歉，處理查詢時出現錯誤。", "sources": []} 
