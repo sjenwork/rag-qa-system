@@ -1,0 +1,87 @@
+/* Markdown 樣式 */
+.markdown-body {
+    @apply prose max-w-none;
+}
+.markdown-body h1 { @apply text-2xl font-bold mb-4; }
+.markdown-body h2 { @apply text-xl font-bold mb-3; }
+.markdown-body h3 { @apply text-lg font-bold mb-2; }
+.markdown-body p { @apply mb-4; }
+.markdown-body ul { @apply list-disc pl-5 mb-4; }
+.markdown-body ol { @apply list-decimal pl-5 mb-4; }
+.markdown-body li { @apply mb-1; }
+.markdown-body code { @apply bg-gray-100 px-1 rounded; }
+.markdown-body pre { @apply bg-gray-100 p-4 rounded mb-4; }
+
+/* 拖放區域樣式 */
+.drop-zone {
+    @apply border-2 border-dashed border-gray-300 rounded-lg p-4 text-center transition-colors duration-200;
+}
+.drop-zone.drag-over {
+    @apply border-blue-500 bg-blue-50;
+}
+
+/* 文檔卡片樣式 */
+.doc-card {
+    @apply bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex justify-between items-center border border-gray-200;
+    min-height: 3rem;
+}
+
+.doc-card:hover {
+    @apply border-blue-400 bg-blue-50;
+    transform: translateY(-1px);
+}
+
+.doc-card .text-sm {
+    @apply truncate mr-2;
+    max-width: calc(100% - 4rem);
+}
+
+.doc-card .flex.items-center {
+    @apply space-x-1 ml-auto;
+}
+
+.preview-btn, .delete-btn {
+    @apply p-1.5 rounded-full transition-all duration-200;
+    opacity: 0.6;
+}
+
+.preview-btn {
+    @apply text-blue-600 hover:bg-blue-100;
+}
+
+.delete-btn {
+    @apply text-red-600 hover:bg-red-100;
+}
+
+.doc-card:hover .preview-btn,
+.doc-card:hover .delete-btn {
+    opacity: 1;
+}
+
+/* 區塊卡片樣式 */
+.section-card {
+    @apply bg-white rounded-lg shadow-md p-6 mb-6;
+}
+
+/* 文檔列表容器 */
+#documents {
+    @apply grid gap-3;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+/* Modal 樣式 */
+#previewModal {
+    @apply fixed inset-0 z-50;
+}
+
+#previewModal[aria-hidden="true"] {
+    @apply hidden;
+}
+
+#previewModal .fixed.inset-0 {
+    @apply backdrop-blur-sm;
+}
+
+#previewModal .markdown-body {
+    text-align: left;
+} 
