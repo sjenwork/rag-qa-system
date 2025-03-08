@@ -120,6 +120,20 @@ async def delete_document(filename: str, password: str = Depends(verify_password
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/documents/{filename}/content")
+async def get_document_content(filename: str):
+    """獲取文檔內容"""
+    file_path = os.path.join("docs", filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="文件不存在")
+    
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return content
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # 掛載靜態文件（前端頁面）
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
