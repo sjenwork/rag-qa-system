@@ -173,27 +173,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // API 請求
     const api = {
         async query(question, similarity) {
-            console.log('開始發送查詢請求:', { question, similarity });
             try {
                 const response = await fetch('/query', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
                         text: question,
-                        similarity_threshold: similarity 
+                        similarity_threshold: similarity
                     })
                 });
-                console.log('查詢響應狀態:', response.status);
-                
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('查詢失敗，服務器返回:', errorText);
-                    throw new Error(errorText || `HTTP error! status: ${response.status}`);
+                    console.error('查詢失敗，伺服器回應:', errorText);
+                    throw new Error(errorText);
                 }
-                
-                const result = await response.json();
-                console.log('查詢結果:', result);
-                return result;
+                return await response.json();
             } catch (error) {
                 console.error('查詢失敗:', error);
                 throw error;
@@ -201,16 +197,12 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         async getDocuments() {
-            console.log('開始獲取文檔列表');
             try {
                 const response = await fetch('/documents');
-                console.log('API 響應狀態:', response.status);
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(await response.text());
                 }
-                const data = await response.json();
-                console.log('獲取到的文檔列表數據:', data);
-                return data;
+                return await response.json();
             } catch (error) {
                 console.error('獲取文檔列表失敗:', error);
                 throw error;
@@ -219,6 +211,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async getDocumentContent(filename) {
             try {
+                console.log('獲取文檔內容:', filename);
+                // 嘗試使用正確的 API 路徑
                 const response = await fetch(`/documents/${encodeURIComponent(filename)}/content`);
                 if (!response.ok) {
                     throw new Error(await response.text());
@@ -232,14 +226,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async deleteDocument(filename, password) {
             try {
+                console.log('刪除文檔:', filename, '密碼:', password);
+                
+                // 使用 FormData 而不是 JSON
+                const formData = new FormData();
+                formData.append('password', password);
+                
                 const response = await fetch(`/documents/${filename}`, {
                     method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password })
+                    body: formData
                 });
+                
                 if (!response.ok) {
-                    throw new Error(await response.text());
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorJson = await response.json();
+                        console.error('刪除文檔失敗，伺服器回應 JSON:', errorJson);
+                        throw new Error(JSON.stringify(errorJson));
+                    } else {
+                        const errorText = await response.text();
+                        console.error('刪除文檔失敗，伺服器回應文本:', errorText);
+                        throw new Error(errorText);
+                    }
                 }
+                
                 return true;
             } catch (error) {
                 console.error('刪除文檔失敗:', error);
@@ -251,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const formData = new FormData();
                 formData.append('file', file);
-                const response = await fetch('/documents', {
+                const response = await fetch('/upload', {
                     method: 'POST',
                     body: formData
                 });
@@ -292,73 +302,53 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-        async refreshDocumentList() {
-            console.log('開始刷新文檔列表');
-            try {
-                const documents = await api.getDocuments();
-                console.log('獲取到的文檔列表:', documents);
-
-                // 檢查 documents 的類型和內容
-                console.log('documents 類型:', typeof documents);
-                console.log('是否為數組:', Array.isArray(documents));
-
-                // 確保 documents 存在且是數組
-                if (!documents) {
-                    console.error('documents 為空');
-                    throw new Error('未獲取到文檔列表數據');
-                }
-
-                const documentsList = Array.isArray(documents) ? documents : [];
-                console.log('處理後的文檔列表:', documentsList);
-                
-                if (documentsList.length > 0) {
-                    console.log('開始生成文檔卡片 HTML');
-                    const documentCards = documentsList
-                        .map(filename => {
-                            console.log('處理文檔:', filename);
-                            return `
-                                <div class="doc-card">
-                                    <div class="doc-card-content">
-                                        <span class="doc-card-title">${filename}</span>
-                                        <div class="doc-card-actions">
-                                            <button class="action-btn preview-btn" onclick="handlePreview('${filename}')" title="預覽">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                                </svg>
-                                            </button>
-                                            <button class="action-btn delete-btn" onclick="handleDelete('${filename}')" title="刪除">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        })
-                        .join('');
-                    
-                    console.log('生成的 HTML:', documentCards);
-                    console.log('documents 元素:', elements.documents);
-                    elements.documents.innerHTML = documentCards;
-                    console.log('HTML 已更新');
-                } else {
-                    console.log('文檔列表為空，顯示提示信息');
-                    elements.documents.innerHTML = `
-                        <div class="text-center text-gray-500 py-8">
-                            尚無文檔，請上傳新文檔
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('刷新文檔列表失敗:', error);
-                elements.documents.innerHTML = `
-                    <div class="text-center text-red-500 py-8">
-                        載入文檔列表失敗：${error.message}
-                    </div>
-                `;
+        refreshDocumentList(documents) {
+            console.log('刷新文檔列表:', documents);
+            if (!elements.documents) return;
+            
+            if (!documents || documents.length === 0) {
+                elements.documents.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-4">暫無文檔</p>';
+                return;
             }
+            
+            const docHTML = documents.map(doc => {
+                return `
+                <div class="doc-card">
+                    <div class="doc-card-content">
+                        <div class="doc-card-title">${doc}</div>
+                        <div class="doc-card-actions">
+                            <button class="action-btn preview-btn" data-filename="${doc}" aria-label="預覽">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                            <button class="action-btn delete-btn" data-filename="${doc}" aria-label="刪除">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            elements.documents.innerHTML = docHTML;
+            
+            // 添加事件監聽器
+            document.querySelectorAll('.preview-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const filename = btn.getAttribute('data-filename');
+                    handlePreview(filename);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const filename = btn.getAttribute('data-filename');
+                    handleDelete(filename);
+                });
+            });
         },
 
         showError(message) {
@@ -429,41 +419,220 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 強制刷新樣式
+    function forceStyleRefresh() {
+        // 通過添加和移除一個類來強制瀏覽器重新計算樣式
+        document.body.classList.add('style-refresh');
+        setTimeout(() => {
+            document.body.classList.remove('style-refresh');
+        }, 10);
+    }
+
+    // 修改 handlePreview 函數，添加強制刷新樣式
     async function handlePreview(filename) {
+        console.log('預覽文檔:', filename);
         try {
             const content = await api.getDocumentContent(filename);
-            modal.preview.show(filename, content);
+            console.log('獲取到的文檔內容:', content);
+            
+            // 打開預覽模態框
+            const previewModal = document.getElementById('previewModal');
+            const previewTitle = document.getElementById('previewTitle');
+            const previewContent = document.getElementById('previewContent');
+            
+            if (!previewModal || !previewTitle || !previewContent) {
+                console.error('找不到預覽模態框元素');
+                showToast('預覽模態框初始化失敗', 'error');
+                return;
+            }
+            
+            previewTitle.textContent = filename;
+            
+            // 使用 VSCode 樣式顯示內容
+            // 確保內容中的 \n 被正確處理為換行，並移除開頭和結尾的引號
+            let processedContent = content.replace(/\\n/g, '\n');
+            
+            // 移除開頭和結尾的引號
+            if (processedContent.startsWith('"') && processedContent.endsWith('"')) {
+                processedContent = processedContent.substring(1, processedContent.length - 1);
+            }
+            
+            // 移除 [object Object] 前綴
+            processedContent = processedContent.replace(/^\[object Object\]/, '');
+            
+            const lines = processedContent.split('\n');
+            let htmlContent = '<div class="editor-content">';
+            
+            lines.forEach((line, index) => {
+                // 處理標題行
+                if (line.startsWith('#')) {
+                    try {
+                        const headingLevel = line.match(/^#+/)[0].length;
+                        const headingText = line.replace(/^#+\s*/, '');
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span class="text-blue-600">${line.substring(0, headingLevel)}</span><span class="text-blue-600">${headingText}</span></div>`;
+                    } catch (e) {
+                        // 如果正則表達式匹配失敗，使用普通文本顯示
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span>${line}</span></div>`;
+                    }
+                } 
+                // 處理列表項
+                else if (line.match(/^\s*[\-\*\+]\s/)) {
+                    try {
+                        const listMarker = line.match(/^\s*[\-\*\+]\s/)[0];
+                        const listText = line.replace(/^\s*[\-\*\+]\s/, '');
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span class="text-gray-700">${listMarker}</span><span>${listText}</span></div>`;
+                    } catch (e) {
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span>${line}</span></div>`;
+                    }
+                }
+                // 處理數字列表
+                else if (line.match(/^\s*\d+\.\s/)) {
+                    try {
+                        const listMarker = line.match(/^\s*\d+\.\s/)[0];
+                        const listText = line.replace(/^\s*\d+\.\s/, '');
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span class="text-gray-700">${listMarker}</span><span>${listText}</span></div>`;
+                    } catch (e) {
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span>${line}</span></div>`;
+                    }
+                }
+                // 處理引用
+                else if (line.startsWith('>')) {
+                    try {
+                        const quoteMarker = line.match(/^>\s*/)[0];
+                        const quoteText = line.replace(/^>\s*/, '');
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span class="text-green-600">${quoteMarker}</span><span class="text-green-600">${quoteText}</span></div>`;
+                    } catch (e) {
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span>${line}</span></div>`;
+                    }
+                }
+                // 處理代碼塊
+                else if (line.match(/^```/)) {
+                    htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span class="text-purple-600">${line}</span></div>`;
+                }
+                // 普通文本
+                else {
+                    htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span>${line}</span></div>`;
+                }
+            });
+            
+            htmlContent += '</div>';
+            previewContent.innerHTML = htmlContent;
+            console.log('設置預覽內容完成');
+            
+            // 顯示模態框並鎖定背景滾動
+            previewModal.classList.remove('hidden');
+            previewModal.classList.add('active');
+            document.body.classList.add('modal-open');
+            
+            // 強制刷新樣式
+            forceStyleRefresh();
+            
+            console.log('顯示預覽模態框');
         } catch (error) {
-            ui.showError(`無法預覽文檔: ${error.message}`);
+            console.error('預覽文檔失敗:', error);
+            showToast('預覽文檔失敗: ' + error.message, 'error');
         }
     }
 
     function handleDelete(filename) {
-        modal.delete.show(filename);
+        console.log('準備刪除文檔:', filename);
+        // 打開刪除確認模態框
+        const deleteModal = document.getElementById('deleteModal');
+        
+        // 存儲當前要刪除的文件名
+        deleteModal.setAttribute('data-filename', filename);
+        
+        // 清空密碼輸入框
+        elements.adminPassword.value = '';
+        
+        // 顯示模態框並鎖定背景滾動
+        deleteModal.classList.remove('hidden');
+        deleteModal.classList.add('active');
+        document.body.classList.add('modal-open');
+        
+        // 強制刷新樣式
+        forceStyleRefresh();
+    }
+
+    function closeDeleteModal() {
+        const deleteModal = document.getElementById('deleteModal');
+        if (deleteModal) {
+            deleteModal.classList.remove('active');
+            deleteModal.classList.add('hidden');
+            // 解除背景滾動鎖定
+            document.body.classList.remove('modal-open');
+            // 清空密碼輸入框
+            elements.adminPassword.value = '';
+        } else {
+            console.error('找不到刪除模態框元素');
+        }
     }
 
     async function confirmDelete() {
+        const deleteModal = document.getElementById('deleteModal');
+        const filename = deleteModal.getAttribute('data-filename');
+        const password = elements.adminPassword.value;
+        
+        if (!password) {
+            showToast('請輸入管理員密碼', 'error');
+            return;
+        }
+        
         try {
-            const password = elements.adminPassword.value;
-            if (!password) {
-                ui.showError('請輸入管理員密碼');
-                return;
+            console.log('確認刪除文檔:', filename, '使用密碼:', password);
+            
+            // 顯示刪除中提示
+            showToast('正在刪除文檔...', 'info');
+            
+            await api.deleteDocument(filename, password);
+            closeDeleteModal();
+            showToast('文檔刪除成功', 'success');
+            
+            // 刷新文檔列表
+            const documents = await api.getDocuments();
+            ui.refreshDocumentList(documents);
+        } catch (error) {
+            console.error('刪除文檔失敗:', error);
+            let errorMsg = '刪除文檔失敗';
+            
+            // 嘗試解析錯誤信息
+            try {
+                if (error.message.includes('密碼錯誤')) {
+                    errorMsg = '密碼錯誤，請重試';
+                } else if (error.message.includes('文件不存在')) {
+                    errorMsg = '文件不存在';
+                } else {
+                    const errorObj = JSON.parse(error.message);
+                    if (errorObj.detail) {
+                        if (Array.isArray(errorObj.detail)) {
+                            errorMsg += ': ' + errorObj.detail.map(d => d.msg).join(', ');
+                        } else {
+                            errorMsg += ': ' + errorObj.detail;
+                        }
+                    }
+                }
+            } catch (e) {
+                // 如果不是 JSON 格式的錯誤，直接使用錯誤信息
+                if (error.message) {
+                    errorMsg += ': ' + error.message;
+                }
             }
             
-            await api.deleteDocument(state.currentFile, password);
-            closeDeleteModal();
-            await ui.refreshDocumentList();
-        } catch (error) {
-            ui.showError(`刪除失敗: ${error.message}`);
+            showToast(errorMsg, 'error');
         }
     }
 
     function closePreviewModal() {
-        modal.preview.hide();
-    }
-
-    function closeDeleteModal() {
-        modal.delete.hide();
+        console.log('關閉預覽模態框');
+        const previewModal = document.getElementById('previewModal');
+        if (previewModal) {
+            previewModal.classList.remove('active');
+            previewModal.classList.add('hidden');
+            // 解除背景滾動鎖定
+            document.body.classList.remove('modal-open');
+        } else {
+            console.error('找不到預覽模態框元素');
+        }
     }
 
     // 文件拖放處理
@@ -483,21 +652,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleDrop(e) {
         e.preventDefault();
-        state.dragCounter = 0;
+        e.stopPropagation();
+        
         elements.dropZone.classList.remove('drag-over');
         
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            handleFileUpload(files[0]);
+        if (e.dataTransfer.files.length) {
+            const file = e.dataTransfer.files[0];
+            handleFileUpload(file);
         }
     }
 
     async function handleFileUpload(file) {
         try {
+            showToast('正在上傳文檔...', 'info');
             await api.uploadDocument(file);
-            await ui.refreshDocumentList();
+            showToast('文檔上傳成功！', 'success');
+            
+            // 刷新文檔列表
+            const documents = await api.getDocuments();
+            ui.refreshDocumentList(documents);
         } catch (error) {
-            ui.showError('上傳失敗：' + error.message);
+            console.error('上傳文檔失敗:', error);
+            showToast('上傳文檔失敗: ' + error.message, 'error');
         }
     }
 
@@ -546,33 +722,77 @@ document.addEventListener('DOMContentLoaded', () => {
             
             previewTitleElement.textContent = previewTitle;
             
-            // 使用 markdown-it 渲染內容
-            if (typeof markdownit !== 'undefined') {
-                const md = markdownit({
-                    html: true,
-                    linkify: true,
-                    typographer: true,
-                    highlight: function (str, lang) {
-                        if (lang && hljs.getLanguage(lang)) {
-                            try {
-                                return hljs.highlight(str, { language: lang }).value;
-                            } catch (__) {}
-                        }
-                        return ''; // 使用外部默認轉義
-                    }
-                });
-                previewContentElement.innerHTML = md.render(content);
-            } else {
-                // 如果 markdown-it 不可用，使用 marked 作為備用
-                try {
-                    previewContentElement.innerHTML = marked.parse(content);
-                } catch (e) {
-                    previewContentElement.innerHTML = `<pre>${content}</pre>`;
-                }
+            // 使用 VSCode 樣式顯示內容
+            // 確保內容中的 \n 被正確處理為換行
+            let processedContent = content.replace(/\\n/g, '\n');
+            
+            // 移除開頭和結尾的引號
+            if (processedContent.startsWith('"') && processedContent.endsWith('"')) {
+                processedContent = processedContent.substring(1, processedContent.length - 1);
             }
             
-            // 顯示模態框
+            const lines = processedContent.split('\n');
+            let htmlContent = '<div class="editor-content">';
+            
+            lines.forEach((line, index) => {
+                // 處理標題行
+                if (line.startsWith('#')) {
+                    try {
+                        const headingLevel = line.match(/^#+/)[0].length;
+                        const headingText = line.replace(/^#+\s*/, '');
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span class="text-blue-600">${line.substring(0, headingLevel)}</span><span class="text-blue-600">${headingText}</span></div>`;
+                    } catch (e) {
+                        // 如果正則表達式匹配失敗，使用普通文本顯示
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span>${line}</span></div>`;
+                    }
+                } 
+                // 處理列表項
+                else if (line.match(/^\s*[\-\*\+]\s/)) {
+                    try {
+                        const listMarker = line.match(/^\s*[\-\*\+]\s/)[0];
+                        const listText = line.replace(/^\s*[\-\*\+]\s/, '');
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span class="text-gray-700">${listMarker}</span><span>${listText}</span></div>`;
+                    } catch (e) {
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span>${line}</span></div>`;
+                    }
+                }
+                // 處理數字列表
+                else if (line.match(/^\s*\d+\.\s/)) {
+                    try {
+                        const listMarker = line.match(/^\s*\d+\.\s/)[0];
+                        const listText = line.replace(/^\s*\d+\.\s/, '');
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span class="text-gray-700">${listMarker}</span><span>${listText}</span></div>`;
+                    } catch (e) {
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span>${line}</span></div>`;
+                    }
+                }
+                // 處理引用
+                else if (line.startsWith('>')) {
+                    try {
+                        const quoteMarker = line.match(/^>\s*/)[0];
+                        const quoteText = line.replace(/^>\s*/, '');
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span class="text-green-600">${quoteMarker}</span><span class="text-green-600">${quoteText}</span></div>`;
+                    } catch (e) {
+                        htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span>${line}</span></div>`;
+                    }
+                }
+                // 處理代碼塊
+                else if (line.match(/^```/)) {
+                    htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span class="text-purple-600">${line}</span></div>`;
+                }
+                // 普通文本
+                else {
+                    htmlContent += `<div class="editor-line"><span class="line-number">${index + 1}</span><span>${line}</span></div>`;
+                }
+            });
+            
+            htmlContent += '</div>';
+            previewContentElement.innerHTML = htmlContent;
+            
+            // 顯示模態框並鎖定背景滾動
             previewModal.classList.remove('hidden');
+            previewModal.classList.add('active');
+            document.body.classList.add('modal-open');
         });
 
         // 表單提交事件 - 保存為文檔
@@ -596,80 +816,154 @@ document.addEventListener('DOMContentLoaded', () => {
             const blob = new Blob([content], { type: 'text/markdown' });
             const fileName = `${title}.md`;
             
-            // 創建 FormData 對象
-            const formData = new FormData();
-            formData.append('file', blob, fileName);
+            // 創建 File 對象
+            const file = new File([blob], fileName, { type: 'text/markdown' });
             
             // 顯示上傳中提示
-            const loadingToast = showToast('正在上傳文檔...', 'info');
+            showToast('正在上傳文檔...', 'info');
             
-            // 發送到服務器
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('上傳失敗');
-                }
-                return response.json();
-            })
-            .then(data => {
-                // 顯示成功提示
-                showToast('文檔上傳成功！', 'success');
-                
-                // 清空表單
-                elements.docTitleInput.value = '';
-                elements.docContentInput.value = '';
-                
-                // 刷新文檔列表
-                fetchDocuments();
-            })
-            .catch(error => {
-                console.error('上傳錯誤:', error);
-                
-                // 顯示錯誤提示
-                showToast('文檔上傳失敗！', 'error');
-            });
+            // 使用現有的 API 方法上傳文件
+            api.uploadDocument(file)
+                .then(() => {
+                    console.log('上傳成功');
+                    // 顯示成功提示
+                    showToast('文檔上傳成功！', 'success');
+                    
+                    // 清空表單
+                    elements.docTitleInput.value = '';
+                    elements.docContentInput.value = '';
+                    
+                    // 刷新文檔列表
+                    return api.getDocuments();
+                })
+                .then(documents => {
+                    ui.refreshDocumentList(documents);
+                })
+                .catch(error => {
+                    console.error('上傳錯誤:', error);
+                    
+                    // 顯示錯誤提示
+                    showToast('文檔上傳失敗: ' + error.message, 'error');
+                });
         });
     }
 
     // 事件監聽器
     function initializeEventListeners() {
-        // 表單提交
-        elements.queryForm.addEventListener('submit', handleSubmit);
+        // 查詢表單提交
+        if (elements.queryForm) {
+            elements.queryForm.addEventListener('submit', handleSubmit);
+        }
         
-        // 相似度滑塊
-        elements.similarity.addEventListener('input', ui.updateSimilarityValue);
+        // 相似度滑塊變化
+        if (elements.similarity) {
+            elements.similarity.addEventListener('input', ui.updateSimilarityValue);
+        }
         
-        // 文件上傳
-        elements.selectFileBtn.addEventListener('click', () => elements.fileInput.click());
-        elements.fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFileUpload(e.target.files[0]);
+        // 文件上傳區域
+        if (elements.dropZone) {
+            elements.dropZone.addEventListener('dragenter', handleDragEnter);
+            elements.dropZone.addEventListener('dragleave', handleDragLeave);
+            elements.dropZone.addEventListener('dragover', e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            elements.dropZone.addEventListener('drop', handleDrop);
+        }
+        
+        // 文件選擇按鈕
+        if (elements.selectFileBtn && elements.fileInput) {
+            elements.selectFileBtn.addEventListener('click', () => {
+                elements.fileInput.click();
+            });
+            
+            elements.fileInput.addEventListener('change', e => {
+                if (e.target.files.length > 0) {
+                    handleFileUpload(e.target.files[0]);
+                }
+            });
+        }
+        
+        // 導航欄切換
+        if (elements.navbarToggle && elements.navbarMenu) {
+            elements.navbarToggle.addEventListener('click', () => {
+                elements.navbarMenu.classList.toggle('hidden');
+            });
+        }
+        
+        // 模態框關閉按鈕
+        const previewModalCloseBtn = document.querySelector('#previewModal button[onclick="closePreviewModal()"]');
+        if (previewModalCloseBtn) {
+            console.log('找到預覽模態框關閉按鈕');
+            previewModalCloseBtn.addEventListener('click', closePreviewModal);
+        } else {
+            console.error('找不到預覽模態框關閉按鈕');
+        }
+        
+        const deleteModalCloseBtn = document.querySelector('#deleteModal button[onclick="closeDeleteModal()"]');
+        if (deleteModalCloseBtn) {
+            console.log('找到刪除模態框關閉按鈕');
+            deleteModalCloseBtn.addEventListener('click', closeDeleteModal);
+        } else {
+            console.error('找不到刪除模態框關閉按鈕');
+        }
+        
+        // ESC 鍵關閉模態框
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                closePreviewModal();
+                closeDeleteModal();
             }
         });
         
-        // 拖放區域
-        elements.dropZone.addEventListener('dragenter', handleDragEnter);
-        elements.dropZone.addEventListener('dragleave', handleDragLeave);
-        elements.dropZone.addEventListener('dragover', (e) => e.preventDefault());
-        elements.dropZone.addEventListener('drop', handleDrop);
-        
-        // 按鍵事件
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                modal.preview.hide();
-                modal.delete.hide();
+        // 密碼輸入框按 Enter 鍵確認刪除
+        elements.adminPassword.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmDelete();
             }
         });
     }
 
-    // 初始化
+    // 初始化應用
     async function initialize() {
+        console.log('初始化應用...');
+        
+        // 初始化 markdown-it
+        window.md = markdownit({
+            html: true,
+            linkify: true,
+            typographer: true,
+            highlight: function (str, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    try {
+                        return hljs.highlight(str, { language: lang }).value;
+                    } catch (__) {}
+                }
+                return ''; // 使用外部默認轉義
+            }
+        });
+        
+        // 初始化 UI 元素
+        ui.updateSimilarityValue();
+        
+        // 初始化導航欄
+        initializeNavbar();
+        
+        // 初始化事件監聽器
         initializeEventListeners();
-        initializeNavbar(); // 初始化導航欄
-        await ui.refreshDocumentList();
+        
+        // 獲取文檔列表
+        try {
+            console.log('獲取文檔列表...');
+            const documents = await api.getDocuments();
+            ui.refreshDocumentList(documents);
+        } catch (error) {
+            console.error('獲取文檔列表失敗:', error);
+            showToast('獲取文檔列表失敗: ' + error.message, 'error');
+        }
+        
+        console.log('應用初始化完成');
     }
 
     // 初始化應用
