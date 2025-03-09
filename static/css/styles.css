@@ -1,87 +1,283 @@
-/* Markdown 樣式 */
-.markdown-body {
-    @apply prose max-w-none;
+/* 基礎變量
+------------------------------------------ */
+:root {
+    --primary: #3B82F6;
+    --primary-hover: #2563EB;
+    --primary-light: #EFF6FF;
+    --danger: #EF4444;
+    --danger-hover: #DC2626;
+    --danger-light: #FEF2F2;
 }
+
+/* 基礎樣式
+------------------------------------------ */
+body {
+    @apply antialiased;
+}
+
+/* Markdown 樣式
+------------------------------------------ */
+.markdown-body {
+    @apply prose max-w-none prose-headings:mt-4 prose-headings:mb-2;
+    @apply prose-p:my-2 prose-ul:my-2 prose-ol:my-2;
+    @apply prose-pre:bg-gray-50 prose-pre:p-4 prose-pre:rounded-lg;
+    @apply prose-code:bg-gray-50 prose-code:px-1 prose-code:rounded;
+    @apply prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:my-2;
+}
+
 .markdown-body h1 { @apply text-2xl font-bold mb-4; }
 .markdown-body h2 { @apply text-xl font-bold mb-3; }
 .markdown-body h3 { @apply text-lg font-bold mb-2; }
-.markdown-body p { @apply mb-4; }
-.markdown-body ul { @apply list-disc pl-5 mb-4; }
-.markdown-body ol { @apply list-decimal pl-5 mb-4; }
+.markdown-body p { @apply mb-2 whitespace-pre-line; }
+.markdown-body ul { @apply list-disc pl-5 mb-2; }
+.markdown-body ol { @apply list-decimal pl-5 mb-2; }
 .markdown-body li { @apply mb-1; }
-.markdown-body code { @apply bg-gray-100 px-1 rounded; }
-.markdown-body pre { @apply bg-gray-100 p-4 rounded mb-4; }
+.markdown-body code { @apply bg-gray-100 px-1 rounded text-sm font-mono; }
+.markdown-body pre { @apply bg-gray-100 p-4 rounded mb-4 overflow-x-auto; }
+.markdown-body pre code { @apply bg-transparent p-0; }
+.markdown-body blockquote { @apply border-l-4 border-gray-300 pl-4 my-2 italic; }
 
-/* 拖放區域樣式 */
-.drop-zone {
-    @apply border-2 border-dashed border-gray-300 rounded-lg p-4 text-center transition-colors duration-200;
+/* Markdown 預覽樣式
+------------------------------------------ */
+.markdown-preview {
+    @apply prose max-w-none bg-white;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #24292e;
 }
+
+.markdown-preview h1 { @apply text-3xl font-bold mt-8 mb-4 pb-2 border-b; }
+.markdown-preview h2 { @apply text-2xl font-bold mt-7 mb-3 pb-2 border-b; }
+.markdown-preview h3 { @apply text-xl font-bold mt-6 mb-3; }
+.markdown-preview h4 { @apply text-lg font-bold mt-5 mb-2; }
+.markdown-preview h5 { @apply text-base font-bold mt-4 mb-2; }
+.markdown-preview h6 { @apply text-sm font-bold mt-4 mb-2; }
+
+.markdown-preview p { @apply my-4 leading-7; }
+.markdown-preview ul { @apply list-disc pl-8 my-4; }
+.markdown-preview ol { @apply list-decimal pl-8 my-4; }
+.markdown-preview li { @apply mb-2; }
+.markdown-preview li > p { @apply my-0; }
+
+.markdown-preview code {
+    @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono;
+    color: #24292e;
+}
+
+.markdown-preview pre {
+    @apply bg-gray-100 p-4 rounded-lg my-4 overflow-x-auto;
+}
+
+.markdown-preview pre code {
+    @apply bg-transparent p-0 text-sm leading-6;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+}
+
+.markdown-preview blockquote {
+    @apply border-l-4 border-gray-300 pl-4 py-1 my-4 text-gray-700;
+}
+
+.markdown-preview table {
+    @apply min-w-full border border-gray-300 my-4;
+    border-collapse: collapse;
+}
+
+.markdown-preview th {
+    @apply bg-gray-50 px-4 py-2 border border-gray-300 font-semibold text-left;
+}
+
+.markdown-preview td {
+    @apply px-4 py-2 border border-gray-300;
+}
+
+.markdown-preview img {
+    @apply max-w-full h-auto rounded-lg my-4;
+}
+
+.markdown-preview hr {
+    @apply my-8 border-t-2 border-gray-200;
+}
+
+.markdown-preview a {
+    @apply text-blue-600 hover:underline;
+}
+
+/* 代碼高亮
+------------------------------------------ */
+.hljs {
+    @apply bg-gray-100 p-4 rounded-lg;
+}
+
+/* 按鈕樣式
+------------------------------------------ */
+button {
+    @apply transition-all duration-200;
+}
+
+button:focus {
+    @apply outline-none ring-2 ring-offset-2;
+}
+
+/* 表單元素
+------------------------------------------ */
+textarea, input[type="text"], input[type="password"] {
+    @apply transition-all duration-200;
+}
+
+textarea:focus, input[type="text"]:focus, input[type="password"]:focus {
+    @apply outline-none ring-2 ring-offset-2 ring-blue-500;
+}
+
+/* 文檔卡片
+------------------------------------------ */
+.doc-card {
+    @apply bg-white p-4 rounded-lg shadow-sm border border-gray-200 
+           hover:shadow-md hover:border-blue-400 hover:bg-blue-50 
+           transition-all duration-200;
+    min-height: 3.5rem;
+    display: block !important;
+}
+
+.doc-card-content {
+    @apply flex justify-between items-center w-full;
+}
+
+.doc-card-title {
+    @apply text-sm text-gray-700 truncate flex-1;
+    max-width: calc(100% - 5rem);
+}
+
+.doc-card-actions {
+    @apply flex items-center space-x-2 ml-auto;
+    min-width: 4rem;
+}
+
+/* 操作按鈕
+------------------------------------------ */
+.action-btn {
+    @apply p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors;
+}
+
+.preview-btn {
+    @apply text-blue-600 hover:text-blue-700 hover:bg-blue-50;
+}
+
+.delete-btn {
+    @apply text-red-600 hover:text-red-700 hover:bg-red-50;
+}
+
+/* 拖放區域
+------------------------------------------ */
+.drop-zone {
+    @apply border-2 border-dashed border-gray-300 rounded-lg p-6 
+           text-center transition-all duration-200
+           hover:border-blue-400 hover:bg-blue-50;
+}
+
 .drop-zone.drag-over {
     @apply border-blue-500 bg-blue-50;
 }
 
-/* 文檔卡片樣式 */
-.doc-card {
-    @apply bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex justify-between items-center border border-gray-200;
-    min-height: 3rem;
-}
-
-.doc-card:hover {
-    @apply border-blue-400 bg-blue-50;
-    transform: translateY(-1px);
-}
-
-.doc-card .text-sm {
-    @apply truncate mr-2;
-    max-width: calc(100% - 4rem);
-}
-
-.doc-card .flex.items-center {
-    @apply space-x-1 ml-auto;
-}
-
-.preview-btn, .delete-btn {
-    @apply p-1.5 rounded-full transition-all duration-200;
-    opacity: 0.6;
-}
-
-.preview-btn {
-    @apply text-blue-600 hover:bg-blue-100;
-}
-
-.delete-btn {
-    @apply text-red-600 hover:bg-red-100;
-}
-
-.doc-card:hover .preview-btn,
-.doc-card:hover .delete-btn {
-    opacity: 1;
-}
-
-/* 區塊卡片樣式 */
+/* 區塊容器
+------------------------------------------ */
 .section-card {
-    @apply bg-white rounded-lg shadow-md p-6 mb-6;
+    @apply bg-white !important;
+    /* border: 2px solid #e5e7eb !important; */
+    border-radius: 1rem !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    padding: 1.5rem !important;
+    margin-bottom: 2rem !important;
 }
 
-/* 文檔列表容器 */
+/* 文檔列表網格
+------------------------------------------ */
 #documents {
-    @apply grid gap-3;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    @apply grid gap-4 mt-4;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    min-height: 100px;
 }
 
-/* Modal 樣式 */
-#previewModal {
-    @apply fixed inset-0 z-50;
+/* 編輯器樣式
+------------------------------------------ */
+.editor-content {
+    @apply bg-white p-4 font-mono text-sm;
+    tab-size: 4;
+    white-space: pre;
+    line-height: 1.5;
+    color: #24292e;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
 }
 
-#previewModal[aria-hidden="true"] {
-    @apply hidden;
+.editor-line {
+    @apply py-0.5 px-2;
+    min-height: 1.5em;
 }
 
-#previewModal .fixed.inset-0 {
-    @apply backdrop-blur-sm;
+.editor-line:hover {
+    @apply bg-gray-50;
 }
 
-#previewModal .markdown-body {
-    text-align: left;
+/* 代碼高亮
+------------------------------------------ */
+.editor-content .text-blue-600 { color: #0550ae; }  /* 標題 */
+.editor-content .text-gray-700 { color: #24292e; }  /* 列表 */
+.editor-content .text-green-600 { color: #2ea043; } /* 引用 */
+.editor-content .text-purple-600 { color: #6f42c1; } /* 代碼 */
+
+.editor-content .bg-gray-100 {
+    background-color: #f6f8fa;
+    border-radius: 3px;
+    padding: 0.2em 0.4em;
+}
+
+/* Modal 樣式
+------------------------------------------ */
+.modal {
+    @apply fixed inset-0 z-50 hidden;
+}
+
+.modal-backdrop {
+    @apply fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm;
+}
+
+.modal-container {
+    @apply fixed inset-0 overflow-y-auto;
+}
+
+.modal-content {
+    max-height: 80vh;
+    overflow-y: auto;
+    @apply bg-white rounded-lg shadow-xl;
+}
+
+.modal-box {
+    @apply relative bg-white rounded-lg shadow-xl;
+}
+
+.modal-header {
+    @apply flex items-center justify-between p-4 border-b;
+}
+
+.modal-body {
+    @apply p-0 max-h-[calc(100vh-12rem)] overflow-y-auto;
+}
+
+/* 響應式調整
+------------------------------------------ */
+@media (max-width: 640px) {
+    .section-card {
+        @apply p-4;
+    }
+    
+    #documents {
+        @apply gap-3;
+    }
+    
+    .doc-card {
+        @apply p-2;
+    }
+    
+    .action-btn {
+        @apply p-1;
+    }
 } 

@@ -8,21 +8,23 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.4.1/dist/typography.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-4xl font-bold mb-8 text-center text-gray-800">RAG 文檔問答系統</h1>
         
-        <!-- 問答區域 -->
-        <div class="section-card">
+        <!-- 問答區塊 -->
+        <section class="section-card">
             <h2 class="text-xl font-semibold mb-4 text-gray-700">提問</h2>
             <form id="queryForm" class="space-y-4">
-                <div class="mb-4">
+                <div>
                     <label for="question" class="block text-sm font-medium text-gray-700">問題</label>
-                    <textarea id="question" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                    <textarea id="question" rows="3" 
+                        class="mt-1 block w-full rounded-md border-green-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
                 </div>
 
-                <div class="mb-4">
+                <div>
                     <label for="similarity" class="block text-sm font-medium text-gray-700">
                         相似度閾值: <span id="similarityValue">0.7</span>
                     </label>
@@ -35,8 +37,12 @@
                     </div>
                 </div>
 
-                <button id="submitQuestion" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">提交問題</button>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                    提交問題
+                </button>
             </form>
+
+            <!-- 回答區域 -->
             <div id="answer" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
                 <h3 class="font-semibold text-lg mb-2">回答：</h3>
                 <div id="answerText" class="markdown-body"></div>
@@ -45,87 +51,75 @@
                     <ul id="sourcesList" class="list-disc pl-5 space-y-1"></ul>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- 分隔線 -->
-        <div class="my-8">
-            <div class="border-t-2 border-gray-300"></div>
-        </div>
+        <!-- 文檔列表區塊 -->
+        <section class="section-card">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">文檔列表</h2>
+            <div id="documents"></div>
+        </section>
 
-        <!-- 文檔管理區域 -->
-        <div class="bg-gray-50 rounded-xl shadow-lg p-8 mb-8">
-            <!-- 文檔列表 -->
-            <div class="section-card">
-                <h2 class="text-xl font-semibold mb-4 text-gray-700">文檔列表</h2>
-                <div id="documents" class="min-h-[100px]">
-                    <!-- 文檔卡片將在這裡動態生成 -->
+        <!-- 上傳區塊 -->
+        <section class="section-card">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">上傳新文檔</h2>
+            <form id="uploadForm">
+                <div id="dropZone" class="drop-zone">
+                    <p class="text-base text-gray-600 mb-2">拖拽文件到此處或點擊上傳</p>
+                    <p class="text-sm text-gray-500">支持 .txt、.md、.pdf 格式</p>
+                    <input type="file" id="fileInput" class="hidden" accept=".txt,.md,.pdf">
+                    <button type="button" id="selectFileBtn" 
+                        class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        選擇文件
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <!-- 預覽 Modal -->
+    <div id="previewModal" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+        <div class="fixed inset-0 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="relative bg-white w-full max-w-4xl rounded-lg shadow-xl">
+                    <div class="flex items-center justify-between p-4 border-b">
+                        <h3 id="previewTitle" class="text-xl font-medium text-gray-900"></h3>
+                        <button type="button" class="text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-lg p-2"
+                                onclick="closePreviewModal()">
+                            <span class="sr-only">關閉</span>
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
+                        <div id="previewContent" class="markdown-body"></div>
+                    </div>
                 </div>
             </div>
-
-            <!-- 分隔線 -->
-            <div class="my-8">
-                <div class="border-t-2 border-gray-200"></div>
-            </div>
-
-            <!-- 上傳文檔 -->
-            <div class="section-card mb-0">
-                <h2 class="text-xl font-semibold mb-4 text-gray-700">上傳新文檔</h2>
-                <form id="uploadForm">
-                    <div id="dropZone" class="drop-zone border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition-all duration-200 hover:border-blue-400 relative after:absolute after:inset-0 after:border-2 after:border-transparent after:rounded-lg after:transition-colors after:duration-200 hover:after:border-blue-200">
-                        <div class="mb-4">
-                            <svg class="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                            <p class="text-base text-gray-600 mt-2">拖拽文件到此處或點擊上傳</p>
-                            <p class="text-sm text-gray-500 mt-1">支持 .txt、.md、.pdf 格式</p>
-                        </div>
-                        <input type="file" id="fileInput" class="hidden" accept=".txt,.md,.pdf">
-                        <button type="button" id="selectFileBtn" class="bg-blue-500 text-white px-6 py-2 rounded-md text-sm hover:bg-blue-600 transition-colors">
-                            選擇文件
-                        </button>
-                    </div>
-                </form>
-            </div>
         </div>
     </div>
 
-    <!-- 刪除文檔對話框 -->
-    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-96">
-            <h3 class="text-xl font-semibold mb-4">確認刪除</h3>
-            <p class="mb-4">請輸入管理員密碼以刪除文檔：</p>
-            <input type="password" id="adminPassword" class="w-full p-2 border rounded mb-4" placeholder="管理員密碼">
-            <div class="flex justify-end space-x-4">
-                <button onclick="closeDeleteModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
-                    取消
-                </button>
-                <button onclick="confirmDelete()" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
-                    確認刪除
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 文檔預覽對話框 -->
-    <div id="previewModal" tabindex="-1" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
-        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true"></div>
-        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-            <div class="relative w-full max-w-4xl">
-                <!-- Modal content -->
-                <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
-                    <!-- Modal header -->
-                    <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-                        <h3 id="previewTitle" class="text-xl font-medium text-gray-900 dark:text-white"></h3>
-                        <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="previewModal">
-                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-                            </svg>
-                            <span class="sr-only">Close modal</span>
+    <!-- 刪除確認 Modal -->
+    <div id="deleteModal" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold mb-4">確認刪除</h3>
+                    <p class="mb-4">請輸入管理員密碼以刪除文檔：</p>
+                    <input type="password" id="adminPassword" 
+                        class="w-full p-2 border rounded mb-4 focus:border-blue-500 focus:ring-blue-500" 
+                        placeholder="管理員密碼">
+                    <div class="flex justify-end space-x-4">
+                        <button onclick="closeDeleteModal()" 
+                            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
+                            取消
                         </button>
-                    </div>
-                    <!-- Modal body -->
-                    <div class="p-4 md:p-5 space-y-4 max-h-[calc(100vh-12rem)] overflow-y-auto">
-                        <div class="markdown-body" id="previewContent"></div>
+                        <button onclick="confirmDelete()" 
+                            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+                            確認刪除
+                        </button>
                     </div>
                 </div>
             </div>
@@ -133,7 +127,9 @@
     </div>
 
     <!-- 外部腳本 -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html> 
