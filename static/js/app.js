@@ -4,6 +4,8 @@ const $$ = (selector) => document.querySelectorAll(selector);
 
 // 等待 DOM 加載完成
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM 加載完成');
+    
     // 配置 markdown-it
     window.md = window.markdownit({
         html: true,
@@ -45,7 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
         previewTitle: $('#previewTitle'),
         previewContent: $('#previewContent'),
         deleteModal: $('#deleteModal'),
-        adminPassword: $('#adminPassword')
+        adminPassword: $('#adminPassword'),
+        navbarToggle: $('[data-collapse-toggle="navbar-main"]'),
+        navbarMenu: $('#navbar-main')
     };
 
     // 狀態管理
@@ -360,6 +364,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // 導航欄控制
+    const navbar = {
+        toggle: () => {
+            elements.navbarMenu.classList.toggle('hidden');
+        },
+        hide: () => {
+            elements.navbarMenu.classList.add('hidden');
+        }
+    };
+
+    // 添加導航欄事件監聽
+    function initializeNavbar() {
+        // 菜單切換按鈕
+        elements.navbarToggle.addEventListener('click', navbar.toggle);
+
+        // 點擊導航項時關閉菜單（移動端）
+        elements.navbarMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 768) { // md 斷點
+                    navbar.hide();
+                }
+            });
+        });
+
+        // 點擊外部時關閉菜單
+        document.addEventListener('click', (event) => {
+            const isNavbarClick = event.target.closest('#navbar-main') || 
+                                event.target.closest('[data-collapse-toggle="navbar-main"]');
+            if (!isNavbarClick && window.innerWidth < 768) {
+                navbar.hide();
+            }
+        });
+    }
+
     // 事件處理
     async function handleSubmit(event) {
         event.preventDefault();
@@ -393,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const content = await api.getDocumentContent(filename);
             modal.preview.show(filename, content);
         } catch (error) {
-            ui.showError('無法預覽文檔');
+            ui.showError(`無法預覽文檔: ${error.message}`);
         }
     }
 
@@ -403,11 +441,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function confirmDelete() {
         try {
-            await api.deleteDocument(state.currentFile, elements.adminPassword.value);
-            modal.delete.hide();
+            const password = elements.adminPassword.value;
+            if (!password) {
+                ui.showError('請輸入管理員密碼');
+                return;
+            }
+            
+            await api.deleteDocument(state.currentFile, password);
+            closeDeleteModal();
             await ui.refreshDocumentList();
         } catch (error) {
-            ui.showError('刪除失敗：' + error.message);
+            ui.showError(`刪除失敗: ${error.message}`);
         }
     }
 
@@ -488,15 +532,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // 初始化
     async function initialize() {
         initializeEventListeners();
+        initializeNavbar(); // 初始化導航欄
         await ui.refreshDocumentList();
     }
 
-    // 啟動應用
+    // 初始化應用
     initialize().catch(console.error);
 
     // 全局函數
-    window.closePreviewModal = () => modal.preview.hide();
-    window.closeDeleteModal = () => modal.delete.hide();
+    window.closePreviewModal = closePreviewModal;
+    window.closeDeleteModal = closeDeleteModal;
     window.handlePreview = handlePreview;
     window.handleDelete = handleDelete;
     window.confirmDelete = confirmDelete;

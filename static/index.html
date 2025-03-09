@@ -1,37 +1,84 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAG 系統</title>
+    <title>AI 測試系統</title>
     <!-- 外部樣式 -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.4.1/dist/typography.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <script>
+        // 檢查用戶偏好的主題
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+        } else {
+            document.documentElement.classList.add('light');
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <h1 class="text-4xl font-bold mb-8 text-center text-gray-800">RAG 文檔問答系統</h1>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
+    <!-- 導航欄 -->
+    <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700" id="mainNav">
+        <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+            <a href="#" class="flex items-center space-x-3">
+                <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span class="self-center text-2xl font-semibold whitespace-nowrap text-gray-900 dark:text-white">AI 測試系統</span>
+            </a>
+            <button data-collapse-toggle="navbar-main" type="button" 
+                    class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 dark:text-gray-400 rounded-lg md:hidden hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600" 
+                    aria-controls="navbar-main" aria-expanded="false">
+                <span class="sr-only">打開主選單</span>
+                <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
+                </svg>
+            </button>
+            <div class="hidden w-full md:block md:w-auto" id="navbar-main">
+                <ul class="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 md:space-x-8 md:flex-row md:mt-0 md:border-0 md:bg-white md:dark:bg-gray-800" id="navItems">
+                    <li>
+                        <a href="#" class="nav-link block py-2 px-3 text-blue-700 dark:text-blue-400 rounded-sm md:bg-transparent md:p-0" aria-current="page">首頁</a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link block py-2 px-3 text-gray-900 dark:text-white rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 md:hover:bg-transparent md:dark:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:dark:hover:text-blue-400 md:p-0">文檔管理</a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link block py-2 px-3 text-gray-900 dark:text-white rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 md:hover:bg-transparent md:dark:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:dark:hover:text-blue-400 md:p-0">問答系統</a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link block py-2 px-3 text-gray-900 dark:text-white rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 md:hover:bg-transparent md:dark:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:dark:hover:text-blue-400 md:p-0">使用說明</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要內容 -->
+    <div class="container mx-auto px-4 pt-8">
+        <h1 class="text-4xl font-bold mb-8 text-center text-gray-800 dark:text-white">RAG 文檔問答系統</h1>
         
         <!-- 問答區塊 -->
-        <section class="section-card">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700">提問</h2>
+        <section class="section-card bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 mb-1">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">提問</h2>
             <form id="queryForm" class="space-y-4">
                 <div>
-                    <label for="question" class="block text-sm font-medium text-gray-700">問題</label>
+                    <label for="question" class="block text-sm font-medium text-gray-700 dark:text-gray-300">問題</label>
                     <textarea id="question" rows="3" 
-                        class="mt-1 block w-full rounded-md border-green-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                        class="mt-1 block w-full rounded-md border-gray-500 dark:border-gray-50 border shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white"></textarea>
                 </div>
 
                 <div>
-                    <label for="similarity" class="block text-sm font-medium text-gray-700">
+                    <label for="similarity" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         相似度閾值: <span id="similarityValue">0.7</span>
                     </label>
                     <input type="range" id="similarity" name="similarity" 
                            min="0.5" max="0.95" step="0.05" value="0.7"
-                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                    <div class="flex justify-between text-xs text-gray-500">
+                           class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                         <span>寬鬆 (0.5)</span>
                         <span>嚴格 (0.95)</span>
                     </div>
@@ -43,10 +90,10 @@
             </form>
 
             <!-- 回答區域 -->
-            <div id="answer" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
-                <h3 class="font-semibold text-lg mb-2">回答：</h3>
-                <div id="answerText" class="markdown-body"></div>
-                <div id="sources" class="mt-4 text-sm text-gray-600">
+            <div id="answer" class="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hidden">
+                <h3 class="font-semibold text-lg mb-2 text-gray-800 dark:text-white">回答：</h3>
+                <div id="answerText" class="markdown-body dark:prose-dark"></div>
+                <div id="sources" class="mt-4 text-sm text-gray-600 dark:text-gray-300">
                     <h4 class="font-semibold mb-2">來源文檔：</h4>
                     <ul id="sourcesList" class="list-disc pl-5 space-y-1"></ul>
                 </div>
@@ -54,19 +101,19 @@
         </section>
 
         <!-- 文檔列表區塊 -->
-        <section class="section-card">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700">文檔列表</h2>
+        <section class="section-card bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 mb-1">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">文檔列表</h2>
             <div id="documents"></div>
         </section>
 
         <!-- 上傳區塊 -->
-        <section class="section-card">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700">上傳新文檔</h2>
+        <section class="section-card bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 mb-1">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">上傳新文檔</h2>
             <form id="uploadForm">
-                <div id="dropZone" class="drop-zone">
-                    <p class="text-base text-gray-600 mb-2">拖拽文件到此處或點擊上傳</p>
-                    <p class="text-sm text-gray-500">支持 .txt、.md、.pdf 格式</p>
-                    <input type="file" id="fileInput" class="hidden" accept=".txt,.md,.pdf">
+                <div id="dropZone" class="drop-zone bg-gray-50 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 p-4">
+                    <p class="text-base text-gray-600 dark:text-gray-300 mb-2">拖拽文件到此處或點擊上傳</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">支持 .txt、.md 等純文字格式</p>
+                    <input type="file" id="fileInput" class="hidden" accept=".txt,.md">
                     <button type="button" id="selectFileBtn" 
                         class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
                         選擇文件
@@ -81,10 +128,10 @@
         <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <div class="fixed inset-0 overflow-y-auto">
             <div class="flex min-h-full items-center justify-center p-4">
-                <div class="relative bg-white w-full max-w-4xl rounded-lg shadow-xl">
-                    <div class="flex items-center justify-between p-4 border-b">
-                        <h3 id="previewTitle" class="text-xl font-medium text-gray-900"></h3>
-                        <button type="button" class="text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-lg p-2"
+                <div class="relative bg-white dark:bg-gray-800 w-full max-w-4xl rounded-lg shadow-xl">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 id="previewTitle" class="text-xl font-medium text-gray-900 dark:text-white"></h3>
+                        <button type="button" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-2"
                                 onclick="closePreviewModal()">
                             <span class="sr-only">關閉</span>
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -93,7 +140,7 @@
                         </button>
                     </div>
                     <div class="p-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
-                        <div id="previewContent" class="markdown-body"></div>
+                        <div id="previewContent" class="markdown-body dark:prose-dark"></div>
                     </div>
                 </div>
             </div>
@@ -104,16 +151,16 @@
     <div id="deleteModal" class="fixed inset-0 z-50 hidden">
         <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <div class="flex min-h-full items-center justify-center p-4">
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
                 <div class="p-6">
-                    <h3 class="text-xl font-semibold mb-4">確認刪除</h3>
-                    <p class="mb-4">請輸入管理員密碼以刪除文檔：</p>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">確認刪除</h3>
+                    <p class="mb-4 text-gray-700 dark:text-gray-300">請輸入管理員密碼以刪除文檔：</p>
                     <input type="password" id="adminPassword" 
-                        class="w-full p-2 border rounded mb-4 focus:border-blue-500 focus:ring-blue-500" 
+                        class="w-full p-2 border rounded mb-4 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600" 
                         placeholder="管理員密碼">
                     <div class="flex justify-end space-x-4">
                         <button onclick="closeDeleteModal()" 
-                            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
+                            class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                             取消
                         </button>
                         <button onclick="confirmDelete()" 
@@ -126,10 +173,112 @@
         </div>
     </div>
 
+    <!-- 深色/淺色模式切換按鈕 -->
+    <button id="themeToggle" class="fixed bottom-6 right-6 p-3 rounded-full bg-white shadow-lg z-50 transition-all duration-300 hover:shadow-xl">
+        <!-- 太陽圖標 (淺色模式顯示) -->
+        <svg id="sunIcon" class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: block;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+        <!-- 月亮圖標 (深色模式顯示) -->
+        <svg id="moonIcon" class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+    </button>
+
     <!-- 外部腳本 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
     <script src="/js/app.js"></script>
+    
+    <!-- 主題切換腳本 -->
+    <script>
+        // 等待頁面完全加載
+        window.addEventListener('load', function() {
+            // 獲取主題切換按鈕
+            const themeToggleBtn = document.getElementById('themeToggle');
+            const htmlElement = document.documentElement;
+            
+            // 檢查當前主題並設置正確的圖標顯示
+            function updateThemeIcons() {
+                const isDark = htmlElement.classList.contains('dark');
+                document.getElementById('sunIcon').style.display = isDark ? 'none' : 'block';
+                document.getElementById('moonIcon').style.display = isDark ? 'block' : 'none';
+            }
+            
+            // 初始化時更新圖標
+            updateThemeIcons();
+            
+            // 強制應用深色模式樣式
+            function forceStyleRefresh() {
+                // 添加一個臨時類別然後移除它，強制瀏覽器重新計算樣式
+                document.body.classList.add('theme-refresh');
+                setTimeout(() => {
+                    document.body.classList.remove('theme-refresh');
+                }, 10);
+                
+                // 特殊處理導航欄
+                const mainNav = document.getElementById('mainNav');
+                const navItems = document.getElementById('navItems');
+                const navbarMain = document.getElementById('navbar-main');
+                
+                if (htmlElement.classList.contains('dark')) {
+                    // 深色模式
+                    if (mainNav) mainNav.style.backgroundColor = '#1e1e2d';
+                    if (navItems) navItems.style.backgroundColor = '#1e1e2d';
+                    if (navbarMain) navbarMain.style.backgroundColor = '#1e1e2d';
+                } else {
+                    // 淺色模式
+                    if (mainNav) mainNav.style.backgroundColor = '';
+                    if (navItems) navItems.style.backgroundColor = '';
+                    if (navbarMain) navbarMain.style.backgroundColor = '';
+                }
+                
+                // 觸發 resize 事件
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                }, 50);
+            }
+            
+            // 初始化時強制應用樣式
+            forceStyleRefresh();
+            
+            if (themeToggleBtn) {
+                // 只添加一個事件監聽器
+                themeToggleBtn.addEventListener('click', function(e) {
+                    // 阻止事件冒泡
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log('切換主題');
+                    
+                    // 切換深色/淺色模式
+                    if (htmlElement.classList.contains('dark')) {
+                        // 切換到淺色模式
+                        htmlElement.classList.remove('dark');
+                        htmlElement.classList.add('light');
+                        localStorage.theme = 'light';
+                        console.log('切換到淺色模式');
+                    } else {
+                        // 切換到深色模式
+                        htmlElement.classList.remove('light');
+                        htmlElement.classList.add('dark');
+                        localStorage.theme = 'dark';
+                        console.log('切換到深色模式');
+                    }
+                    
+                    // 更新圖標顯示
+                    updateThemeIcons();
+                    
+                    // 強制重新應用樣式
+                    forceStyleRefresh();
+                });
+                
+                console.log('主題切換按鈕事件已綁定');
+            } else {
+                console.error('找不到主題切換按鈕');
+            }
+        });
+    </script>
 </body>
 </html> 

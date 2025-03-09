@@ -7,12 +7,18 @@
     --danger: #EF4444;
     --danger-hover: #DC2626;
     --danger-light: #FEF2F2;
+    --bg-light: #f9fafb;
+    --bg-dark: #1f2937;
+    --text-light: #111827;
+    --text-dark: #f9fafb;
+    --primary-dark: #60a5fa;
 }
 
 /* 基礎樣式
 ------------------------------------------ */
 body {
     @apply antialiased;
+    padding-top: 4rem !important;
 }
 
 /* Markdown 樣式
@@ -131,39 +137,79 @@ textarea:focus, input[type="text"]:focus, input[type="password"]:focus {
 /* 文檔卡片
 ------------------------------------------ */
 .doc-card {
-    @apply bg-white p-4 rounded-lg shadow-sm border border-gray-200 
-           hover:shadow-md hover:border-blue-400 hover:bg-blue-50 
-           transition-all duration-200;
-    min-height: 3.5rem;
+    background-color: white !important;
+    /* padding: 1rem !important; */
+    border-radius: 0.5rem !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid #e5e7eb !important;
+    transition: all 0.2s !important;
+    min-height: 3.5rem !important;
     display: block !important;
+    margin-bottom: 4px !important;
+}
+
+.doc-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    border-color: #93c5fd !important;
+    background-color: #eff6ff !important;
 }
 
 .doc-card-content {
-    @apply flex justify-between items-center w-full;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 1rem !important; 
 }
 
 .doc-card-title {
-    @apply text-sm text-gray-700 truncate flex-1;
-    max-width: calc(100% - 5rem);
+    font-size: 0.875rem !important;
+    color: #4b5563 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    flex: 1 1 auto !important;
+    max-width: calc(100% - 5rem) !important;
 }
 
 .doc-card-actions {
-    @apply flex items-center space-x-2 ml-auto;
-    min-width: 4rem;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    margin-left: auto !important;
+    min-width: 4rem !important;
 }
 
 /* 操作按鈕
 ------------------------------------------ */
 .action-btn {
-    @apply p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors;
+    padding: 0.375rem !important;
+    border-radius: 0.5rem !important;
+    color: #6b7280 !important;
+    transition: background-color 0.2s, color 0.2s !important;
+}
+
+.action-btn:hover {
+    background-color: #f3f4f6 !important;
+    color: #374151 !important;
 }
 
 .preview-btn {
-    @apply text-blue-600 hover:text-blue-700 hover:bg-blue-50;
+    color: #3b82f6 !important;
+}
+
+.preview-btn:hover {
+    background-color: #eff6ff !important;
+    color: #2563eb !important;
 }
 
 .delete-btn {
-    @apply text-red-600 hover:text-red-700 hover:bg-red-50;
+    color: #ef4444 !important;
+}
+
+.delete-btn:hover {
+    background-color: #fee2e2 !important;
+    color: #dc2626 !important;
 }
 
 /* 拖放區域
@@ -186,7 +232,7 @@ textarea:focus, input[type="text"]:focus, input[type="password"]:focus {
     border-radius: 1rem !important;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
     padding: 1.5rem !important;
-    margin-bottom: 2rem !important;
+    margin-bottom: 1rem !important;
 }
 
 /* 文檔列表網格
@@ -280,4 +326,517 @@ textarea:focus, input[type="text"]:focus, input[type="password"]:focus {
     .action-btn {
         @apply p-1;
     }
-} 
+}
+
+/* 導航欄樣式
+------------------------------------------ */
+.nav-link {
+    @apply transition-colors duration-200;
+}
+
+.nav-link:hover {
+    @apply text-blue-600;
+}
+
+.nav-link.active {
+    @apply text-blue-700 font-semibold;
+}
+
+@media (max-width: 768px) {
+    #navbar-main {
+        position: fixed !important;
+        top: 4rem !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 999 !important;
+        background-color: white !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        border-top: 1px solid #e5e7eb !important;
+    }
+    
+    html.dark #navbar-main {
+        background-color: #1e1e2d !important;
+        border-top: 1px solid #374151 !important;
+    }
+}
+
+/* 深色模式樣式
+------------------------------------------ */
+html.dark body {
+    background-color: var(--bg-dark) !important;
+    color: var(--text-dark) !important;
+}
+
+html.light body {
+    background-color: var(--bg-light) !important;
+    color: var(--text-light) !important;
+}
+
+.dark .editor-content {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+}
+
+.dark .editor-line:hover {
+    background-color: #2a2a2a;
+}
+
+.dark .editor-content .text-blue-600 { color: #569cd6; }  /* 標題 */
+.dark .editor-content .text-gray-700 { color: #d4d4d4; }  /* 列表 */
+.dark .editor-content .text-green-600 { color: #6a9955; } /* 引用 */
+.dark .editor-content .text-purple-600 { color: #c586c0; } /* 代碼 */
+
+.dark .editor-content .bg-gray-100 {
+    background-color: #2a2a2a;
+}
+
+.dark .doc-card {
+    @apply bg-gray-800 border-gray-700;
+}
+
+.dark .doc-card:hover {
+    @apply bg-gray-700 border-blue-500;
+}
+
+.dark .doc-card-title {
+    @apply text-gray-200;
+}
+
+.dark .action-btn {
+    @apply text-gray-400 hover:bg-gray-700 hover:text-gray-200;
+}
+
+.dark .preview-btn {
+    @apply text-blue-400 hover:text-blue-300 hover:bg-gray-700;
+}
+
+.dark .delete-btn {
+    @apply text-red-400 hover:text-red-300 hover:bg-gray-700;
+}
+
+.dark .markdown-body {
+    color-scheme: dark;
+    --color-prettylights-syntax-comment: #8b949e;
+    --color-prettylights-syntax-constant: #79c0ff;
+    --color-prettylights-syntax-entity: #d2a8ff;
+    --color-prettylights-syntax-storage-modifier-import: #c9d1d9;
+    --color-prettylights-syntax-entity-tag: #7ee787;
+    --color-prettylights-syntax-keyword: #ff7b72;
+    --color-prettylights-syntax-string: #a5d6ff;
+    --color-prettylights-syntax-variable: #ffa657;
+    --color-prettylights-syntax-brackethighlighter-unmatched: #f85149;
+    --color-prettylights-syntax-invalid-illegal-text: #f0f6fc;
+    --color-prettylights-syntax-invalid-illegal-bg: #8e1519;
+    --color-prettylights-syntax-carriage-return-text: #f0f6fc;
+    --color-prettylights-syntax-carriage-return-bg: #b62324;
+    --color-prettylights-syntax-string-regexp: #7ee787;
+    --color-prettylights-syntax-markup-list: #f2cc60;
+    --color-prettylights-syntax-markup-heading: #1f6feb;
+    --color-prettylights-syntax-markup-italic: #c9d1d9;
+    --color-prettylights-syntax-markup-bold: #c9d1d9;
+    --color-prettylights-syntax-markup-deleted-text: #ffdcd7;
+    --color-prettylights-syntax-markup-deleted-bg: #67060c;
+    --color-prettylights-syntax-markup-inserted-text: #aff5b4;
+    --color-prettylights-syntax-markup-inserted-bg: #033a16;
+    --color-prettylights-syntax-markup-changed-text: #ffdfb6;
+    --color-prettylights-syntax-markup-changed-bg: #5a1e02;
+    --color-prettylights-syntax-markup-ignored-text: #c9d1d9;
+    --color-prettylights-syntax-markup-ignored-bg: #1158c7;
+    --color-prettylights-syntax-meta-diff-range: #d2a8ff;
+    --color-prettylights-syntax-brackethighlighter-angle: #8b949e;
+    --color-prettylights-syntax-sublimelinter-gutter-mark: #484f58;
+    --color-prettylights-syntax-constant-other-reference-link: #a5d6ff;
+    --color-fg-default: #c9d1d9;
+    --color-fg-muted: #8b949e;
+    --color-fg-subtle: #6e7681;
+    --color-canvas-default: #0d1117;
+    --color-canvas-subtle: #161b22;
+    --color-border-default: #30363d;
+    --color-border-muted: #21262d;
+    --color-neutral-muted: rgba(110,118,129,0.4);
+    --color-accent-fg: #58a6ff;
+    --color-accent-emphasis: #1f6feb;
+    --color-attention-subtle: rgba(187,128,9,0.15);
+    --color-danger-fg: #f85149;
+}
+
+/* 主題切換按鈕樣式
+------------------------------------------ */
+#themeToggle {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    z-index: 9999 !important;
+}
+
+html.dark #themeToggle {
+    background-color: #374151 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+html.light #themeToggle {
+    background-color: white !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+#themeToggle:hover {
+    transform: rotate(15deg);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+html.dark #themeToggle:hover {
+    transform: rotate(-15deg);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2) !important;
+}
+
+#sunIcon {
+    color: #f59e0b !important;
+}
+
+#moonIcon {
+    color: #93c5fd !important;
+}
+
+/* 深色模式下的卡片樣式 */
+html.dark .section-card {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+}
+
+html.dark .doc-card {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+html.dark .doc-card:hover {
+    background-color: #111827 !important;
+    border-color: #3b82f6 !important;
+}
+
+html.dark .doc-card-title {
+    color: #e5e7eb !important;
+}
+
+/* 深色模式下的表單元素 */
+html.dark textarea, 
+html.dark input[type="text"], 
+html.dark input[type="password"] {
+    background-color: #374151 !important;
+    color: #e5e7eb !important;
+    border-color: #4b5563 !important;
+}
+
+html.dark textarea:focus, 
+html.dark input[type="text"]:focus, 
+html.dark input[type="password"]:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5) !important;
+}
+
+/* 深色模式下的按鈕 */
+html.dark button.bg-blue-600 {
+    background-color: #2563eb !important;
+}
+
+html.dark button.bg-blue-600:hover {
+    background-color: #1d4ed8 !important;
+}
+
+/* 深色模式下的導航欄 */
+html.dark nav {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+html.dark .nav-link {
+    color: #e5e7eb !important;
+}
+
+html.dark .nav-link:hover {
+    color: #93c5fd !important;
+}
+
+/* 主要標題和內容元素的深色模式
+------------------------------------------ */
+html.dark h1.text-gray-800 {
+    color: white !important;
+}
+
+html.dark h2.text-gray-700 {
+    color: #e5e7eb !important;
+}
+
+html.dark h3.text-gray-900,
+html.dark h4.text-gray-900 {
+    color: white !important;
+}
+
+html.dark p.text-gray-700,
+html.dark p.text-gray-600 {
+    color: #d1d5db !important;
+}
+
+html.dark span.text-gray-900 {
+    color: white !important;
+}
+
+html.dark label.text-gray-700 {
+    color: #e5e7eb !important;
+}
+
+/* 確保所有深色模式下的文本顏色 */
+html.dark .text-gray-800,
+html.dark .text-gray-900 {
+    color: white !important;
+}
+
+html.dark .text-gray-700,
+html.dark .text-gray-600 {
+    color: #d1d5db !important;
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400 {
+    color: #9ca3af !important;
+}
+
+/* 深色模式下的背景顏色 */
+html.dark .bg-white {
+    background-color: #1f2937 !important;
+}
+
+html.dark .bg-gray-50 {
+    background-color: #111827 !important;
+}
+
+html.dark .bg-gray-100 {
+    background-color: #374151 !important;
+}
+
+/* 深色模式下的邊框顏色 */
+html.dark .border-gray-200 {
+    border-color: #374151 !important;
+}
+
+html.dark .border-gray-300 {
+    border-color: #4b5563 !important;
+}
+
+/* 深色模式下的預覽模態框 */
+html.dark #previewModal .bg-white {
+    background-color: #1f2937 !important;
+}
+
+html.dark #previewModal .text-gray-900 {
+    color: white !important;
+}
+
+/* 深色模式下的刪除模態框 */
+html.dark #deleteModal .bg-white {
+    background-color: #1f2937 !important;
+}
+
+html.dark #deleteModal .text-gray-900 {
+    color: white !important;
+}
+
+/* 深色模式下的下拉區域 */
+html.dark #dropZone {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+}
+
+html.dark #dropZone p {
+    color: #d1d5db !important;
+}
+
+/* 導航欄深色模式樣式 - 更具體的選擇器 */
+html.dark body nav#mainNav {
+    background-color: #1e1e2d !important;
+    border-color: #2d2d3a !important;
+}
+
+html.dark body nav#mainNav div ul#navItems {
+    background-color: #1e1e2d !important;
+}
+
+html.dark body nav#mainNav div ul#navItems li a.nav-link {
+    color: #e5e7eb !important;
+}
+
+html.dark body nav#mainNav div ul#navItems li a.nav-link:hover {
+    color: #93c5fd !important;
+}
+
+html.dark body nav#mainNav div ul#navItems li a.nav-link[aria-current="page"] {
+    color: #60a5fa !important;
+}
+
+html.dark body div#navbar-main {
+    background-color: #1e1e2d !important;
+}
+
+/* 主要標題和內容元素的深色模式
+------------------------------------------ */
+html.dark h1.text-gray-800 {
+    color: white !important;
+}
+
+html.dark h2.text-gray-700 {
+    color: #e5e7eb !important;
+}
+
+html.dark h3.text-gray-900,
+html.dark h4.text-gray-900 {
+    color: white !important;
+}
+
+html.dark p.text-gray-700,
+html.dark p.text-gray-600 {
+    color: #d1d5db !important;
+}
+
+html.dark span.text-gray-900 {
+    color: white !important;
+}
+
+html.dark label.text-gray-700 {
+    color: #e5e7eb !important;
+}
+
+/* 確保所有深色模式下的文本顏色 */
+html.dark .text-gray-800,
+html.dark .text-gray-900 {
+    color: white !important;
+}
+
+html.dark .text-gray-700,
+html.dark .text-gray-600 {
+    color: #d1d5db !important;
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400 {
+    color: #9ca3af !important;
+}
+
+/* 深色模式下的背景顏色 */
+html.dark .bg-white {
+    background-color: #1f2937 !important;
+}
+
+html.dark .bg-gray-50 {
+    background-color: #111827 !important;
+}
+
+html.dark .bg-gray-100 {
+    background-color: #374151 !important;
+}
+
+/* 深色模式下的邊框顏色 */
+html.dark .border-gray-200 {
+    border-color: #374151 !important;
+}
+
+html.dark .border-gray-300 {
+    border-color: #4b5563 !important;
+}
+
+/* 深色模式下的預覽模態框 */
+html.dark #previewModal .bg-white {
+    background-color: #1f2937 !important;
+}
+
+html.dark #previewModal .text-gray-900 {
+    color: white !important;
+}
+
+/* 深色模式下的刪除模態框 */
+html.dark #deleteModal .bg-white {
+    background-color: #1f2937 !important;
+}
+
+html.dark #deleteModal .text-gray-900 {
+    color: white !important;
+}
+
+/* 深色模式下的下拉區域 */
+html.dark #dropZone {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+}
+
+html.dark #dropZone p {
+    color: #d1d5db !important;
+}
+
+/* 導航欄樣式
+------------------------------------------ */
+.nav-link {
+    @apply transition-colors duration-200;
+}
+
+.nav-link:hover {
+    @apply text-blue-600;
+}
+
+.nav-link.active {
+    @apply text-blue-700 font-semibold;
+}
+
+@media (max-width: 768px) {
+    #navbar-main {
+        position: fixed !important;
+        top: 4rem !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 999 !important;
+        background-color: white !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        border-top: 1px solid #e5e7eb !important;
+    }
+    
+    html.dark #navbar-main {
+        background-color: #1e1e2d !important;
+        border-top: 1px solid #374151 !important;
+    }
+}
+
+/* 導航欄固定樣式
+------------------------------------------ */
+nav#mainNav {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    background-color: white !important;
+    border-bottom: 1px solid #e5e7eb !important;
+}
+
+html.dark nav#mainNav {
+    background-color: #1e1e2d !important;
+    border-bottom: 1px solid #374151 !important;
+}
+
+/* 為固定導航欄添加頁面內容的頂部間距 */
+body {
+    padding-top: 4rem !important;
+}
+
+/* 移動端導航樣式調整 */
+@media (max-width: 768px) {
+    #navbar-main {
+        position: fixed !important;
+        top: 4rem !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 999 !important;
+        background-color: white !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        border-top: 1px solid #e5e7eb !important;
+    }
+    
+    html.dark #navbar-main {
+        background-color: #1e1e2d !important;
+        border-top: 1px solid #374151 !important;
+    }
+}
