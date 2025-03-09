@@ -1,0 +1,50 @@
+[
+  {
+    "Listed No.": "001",
+    "Series No.": "01",
+    "Chinese Name": "多氯聯苯",
+    "English Name": "Polychlorinated\nbiphenyls",
+    "Chemical Formula": "C₁₂H₁₀₋ₓClₓ\n(1≤x≤10)",
+    "CAS. Number": "1336-36-3 等",
+    "control\nconcentration\nstandard\nw/w %": "0.1",
+    "graded han-\ndling quantity\n(公斤)": "50 註6",
+    "Toxicity\nClassify": "1,2",
+    "公告\n日期": "77.06.22\n88.07.19\n88.12.24\n89.10.25\n89.12.20"
+  },
+  {
+    "Listed No.": "002",
+    "Series No.": "01",
+    "Chinese Name": "可氯丹",
+    "English Name": "Chlordane",
+    "Chemical Formula": "C₁₀H₆Cl₈",
+    "CAS. Number": "57-74-9",
+    "control\nconcentration\nstandard\nw/w %": "1",
+    "graded han-\ndling quantity\n(公斤)": "50 註6",
+    "Toxicity\nClassify": "1,3",
+    "公告\n日期": "77.06.24\n88.07.19\n88.12.24\n89.10.25"
+  },
+  {
+    "Listed No.": "003",
+    "Series No.": "01",
+    "Chinese Name": "石綿",
+    "English Name": "Asbestos",
+    "Chemical Formula": "5.5FeO, 1.5MgO,8SiO₂,\nH₂O",
+    "CAS. Number": "1332-21-4",
+    "control\nconcentration\nstandard\nw/w %": "1 註7",
+    "graded han-\ndling quantity\n(公斤)": "500",
+    "Toxicity\nClassify": "2",
+    "公告\n日期": "78.05.01\n80.02.27\n85.10.17\n86.02.26\n87.07.07\n87.12.01\n88.07.19\n88.12.24\n89.10.25\n94.12.30\n98.07.31\n101.02.02\n102.01.24\n106.05.10"
+  },
+  {
+    "Listed No.": "004",
+    "Series No.": "01",
+    "Chinese Name": "地特靈",
+    "English Name": "Dieldrin",
+    "Chemical Formula": "C₁₂H₈Cl₆O",
+    "CAS. Number": "60-57-1",
+    "control\nconcentration\nstandard\nw/w %": "1",
+    "graded han-\ndling quantity\n(公斤)": "50 註6",
+    "Toxicity\nClassify": "1,3",
+    "公告\n日期": "78.05.02\n88.07.19\n88.12.24\n89.10.25"
+  }
+]

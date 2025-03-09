@@ -246,66 +246,155 @@ textarea:focus, input[type="text"]:focus, input[type="password"]:focus {
 /* 編輯器樣式
 ------------------------------------------ */
 .editor-content {
-    @apply bg-white p-4 font-mono text-sm;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
     tab-size: 4;
-    white-space: pre;
+    -moz-tab-size: 4;
+    border-radius: 0.375rem;
+    overflow-x: auto;
     line-height: 1.5;
-    color: #24292e;
-    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
 }
 
 .editor-line {
-    @apply py-0.5 px-2;
-    min-height: 1.5em;
+    display: flex;
+    padding: 0.125rem 0;
 }
 
 .editor-line:hover {
-    @apply bg-gray-50;
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
-/* 代碼高亮
------------------------------------------- */
-.editor-content .text-blue-600 { color: #0550ae; }  /* 標題 */
-.editor-content .text-gray-700 { color: #24292e; }  /* 列表 */
-.editor-content .text-green-600 { color: #2ea043; } /* 引用 */
-.editor-content .text-purple-600 { color: #6f42c1; } /* 代碼 */
+.line-number {
+    color: #6b7280;
+    min-width: 2rem;
+    text-align: right;
+    padding-right: 0.5rem;
+    user-select: none;
+}
+
+.line-content {
+    flex: 1;
+}
+
+.line-content.heading {
+    color: #1e40af;
+    font-weight: bold;
+}
+
+.editor-content .text-blue-600 { color: #0550ae !important; }  /* 標題 */
+.editor-content .text-gray-700 { color: #24292e !important; }  /* 列表 */
+.editor-content .text-green-600 { color: #2ea043 !important; } /* 引用 */
+.editor-content .text-purple-600 { color: #6f42c1 !important; } /* 代碼 */
 
 .editor-content .bg-gray-100 {
-    background-color: #f6f8fa;
-    border-radius: 3px;
-    padding: 0.2em 0.4em;
+    background-color: #f6f8fa !important;
+    border-radius: 0.25rem !important;
+    padding: 0.125rem 0.25rem !important;
 }
 
-/* Modal 樣式
------------------------------------------- */
+/* 深色模式下的編輯器樣式 */
+html.dark .editor-content {
+    background-color: #1e1e2d;
+    color: #e2e8f0;
+}
+
+html.dark .editor-line:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+html.dark .line-number {
+    color: #9ca3af;
+}
+
+html.dark .editor-content .text-blue-600 { color: #569cd6 !important; }  /* 標題 */
+html.dark .editor-content .text-gray-700 { color: #d4d4d4 !important; }  /* 列表 */
+html.dark .editor-content .text-green-600 { color: #6a9955 !important; } /* 引用 */
+html.dark .editor-content .text-purple-600 { color: #c586c0 !important; } /* 代碼 */
+
+html.dark .editor-content .bg-gray-100 {
+    background-color: #2a2a2a;
+}
+
+/* 模態框樣式 */
 .modal {
-    @apply fixed inset-0 z-50 hidden;
+    display: none !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.modal.active {
+    display: flex !important;
 }
 
 .modal-backdrop {
-    @apply fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
 }
 
 .modal-container {
-    @apply fixed inset-0 overflow-y-auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1002;
+    padding: 1rem;
 }
 
 .modal-content {
-    max-height: 80vh;
-    overflow-y: auto;
-    @apply bg-white rounded-lg shadow-xl;
+    background-color: white;
+    border-radius: 0.5rem;
+    width: 100%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
 }
 
-.modal-box {
-    @apply relative bg-white rounded-lg shadow-xl;
+.dark .modal-content {
+    background-color: #1e1e2d;
+    color: white;
 }
 
 .modal-header {
-    @apply flex items-center justify-between p-4 border-b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .modal-header {
+    border-bottom: 1px solid #374151;
 }
 
 .modal-body {
-    @apply p-0 max-h-[calc(100vh-12rem)] overflow-y-auto;
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: calc(90vh - 4rem);
+}
+
+/* 模態框開啟時鎖定背景滾動 */
+body.modal-open {
+    overflow: hidden;
+    padding-right: 15px; /* 防止滾動條消失導致頁面跳動 */
 }
 
 /* 響應式調整
@@ -674,132 +763,6 @@ html.dark body div#navbar-main {
     background-color: #1e1e2d !important;
 }
 
-/* 主要標題和內容元素的深色模式
------------------------------------------- */
-html.dark h1.text-gray-800 {
-    color: white !important;
-}
-
-html.dark h2.text-gray-700 {
-    color: #e5e7eb !important;
-}
-
-html.dark h3.text-gray-900,
-html.dark h4.text-gray-900 {
-    color: white !important;
-}
-
-html.dark p.text-gray-700,
-html.dark p.text-gray-600 {
-    color: #d1d5db !important;
-}
-
-html.dark span.text-gray-900 {
-    color: white !important;
-}
-
-html.dark label.text-gray-700 {
-    color: #e5e7eb !important;
-}
-
-/* 確保所有深色模式下的文本顏色 */
-html.dark .text-gray-800,
-html.dark .text-gray-900 {
-    color: white !important;
-}
-
-html.dark .text-gray-700,
-html.dark .text-gray-600 {
-    color: #d1d5db !important;
-}
-
-html.dark .text-gray-500,
-html.dark .text-gray-400 {
-    color: #9ca3af !important;
-}
-
-/* 深色模式下的背景顏色 */
-html.dark .bg-white {
-    background-color: #1f2937 !important;
-}
-
-html.dark .bg-gray-50 {
-    background-color: #111827 !important;
-}
-
-html.dark .bg-gray-100 {
-    background-color: #374151 !important;
-}
-
-/* 深色模式下的邊框顏色 */
-html.dark .border-gray-200 {
-    border-color: #374151 !important;
-}
-
-html.dark .border-gray-300 {
-    border-color: #4b5563 !important;
-}
-
-/* 深色模式下的預覽模態框 */
-html.dark #previewModal .bg-white {
-    background-color: #1f2937 !important;
-}
-
-html.dark #previewModal .text-gray-900 {
-    color: white !important;
-}
-
-/* 深色模式下的刪除模態框 */
-html.dark #deleteModal .bg-white {
-    background-color: #1f2937 !important;
-}
-
-html.dark #deleteModal .text-gray-900 {
-    color: white !important;
-}
-
-/* 深色模式下的下拉區域 */
-html.dark #dropZone {
-    background-color: #374151 !important;
-    border-color: #4b5563 !important;
-}
-
-html.dark #dropZone p {
-    color: #d1d5db !important;
-}
-
-/* 導航欄樣式
------------------------------------------- */
-.nav-link {
-    @apply transition-colors duration-200;
-}
-
-.nav-link:hover {
-    @apply text-blue-600;
-}
-
-.nav-link.active {
-    @apply text-blue-700 font-semibold;
-}
-
-@media (max-width: 768px) {
-    #navbar-main {
-        position: fixed !important;
-        top: 4rem !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 999 !important;
-        background-color: white !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-        border-top: 1px solid #e5e7eb !important;
-    }
-    
-    html.dark #navbar-main {
-        background-color: #1e1e2d !important;
-        border-top: 1px solid #374151 !important;
-    }
-}
-
 /* 導航欄固定樣式
 ------------------------------------------ */
 nav#mainNav {
@@ -895,4 +858,9 @@ html.dark #textInputForm textarea:focus {
     10% { opacity: 1; transform: translateY(0); }
     90% { opacity: 1; transform: translateY(0); }
     100% { opacity: 0; transform: translateY(-20px); }
+}
+
+/* 用於強制刷新樣式的類 */
+.style-refresh {
+    animation: none !important;
 }
