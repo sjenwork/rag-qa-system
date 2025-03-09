@@ -121,6 +121,35 @@
                 </div>
             </form>
         </section>
+
+        <!-- 文本輸入區塊 -->
+        <section class="section-card bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">直接輸入文檔</h2>
+            <form id="textInputForm" class="space-y-4">
+                <div>
+                    <label for="docTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300">文檔標題</label>
+                    <input type="text" id="docTitle" 
+                        class="mt-1 block w-full rounded-md border-gray-500 dark:border-gray-50 border shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white"
+                        placeholder="輸入文檔標題（不含副檔名）">
+                </div>
+                <div>
+                    <label for="docContent" class="block text-sm font-medium text-gray-700 dark:text-gray-300">文檔內容 (支持 Markdown 格式)</label>
+                    <textarea id="docContent" rows="10" 
+                        class="mt-1 block w-full rounded-md border-gray-500 dark:border-gray-50 border shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white font-mono"
+                        placeholder="# 標題&#10;## 子標題&#10;- 列表項目&#10;1. 有序列表&#10;```&#10;代碼塊&#10;```"></textarea>
+                </div>
+                <div class="flex justify-between">
+                    <button type="button" id="previewContentBtn" 
+                        class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        預覽內容
+                    </button>
+                    <button type="submit" id="saveContentBtn" 
+                        class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        保存為文檔
+                    </button>
+                </div>
+            </form>
+        </section>
     </div>
 
     <!-- 預覽 Modal -->

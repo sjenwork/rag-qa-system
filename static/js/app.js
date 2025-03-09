@@ -32,24 +32,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // DOM 元素
     const elements = {
-        queryForm: $('#queryForm'),
-        question: $('#question'),
-        similarity: $('#similarity'),
-        similarityValue: $('#similarityValue'),
-        answer: $('#answer'),
-        answerText: $('#answerText'),
-        sourcesList: $('#sourcesList'),
-        documents: $('#documents'),
-        dropZone: $('#dropZone'),
-        fileInput: $('#fileInput'),
-        selectFileBtn: $('#selectFileBtn'),
-        previewModal: $('#previewModal'),
-        previewTitle: $('#previewTitle'),
-        previewContent: $('#previewContent'),
-        deleteModal: $('#deleteModal'),
-        adminPassword: $('#adminPassword'),
-        navbarToggle: $('[data-collapse-toggle="navbar-main"]'),
-        navbarMenu: $('#navbar-main')
+        queryForm: document.getElementById('queryForm'),
+        question: document.getElementById('question'),
+        similarity: document.getElementById('similarity'),
+        similarityValue: document.getElementById('similarityValue'),
+        answer: document.getElementById('answer'),
+        answerText: document.getElementById('answerText'),
+        sources: document.getElementById('sources'),
+        sourcesList: document.getElementById('sourcesList'),
+        documents: document.getElementById('documents'),
+        dropZone: document.getElementById('dropZone'),
+        fileInput: document.getElementById('fileInput'),
+        selectFileBtn: document.getElementById('selectFileBtn'),
+        uploadForm: document.getElementById('uploadForm'),
+        adminPassword: document.getElementById('adminPassword'),
+        navbarToggle: document.querySelector('[data-collapse-toggle="navbar-main"]'),
+        navbarMenu: document.getElementById('navbar-main'),
+        textInputForm: document.getElementById('textInputForm'),
+        docTitleInput: document.getElementById('docTitle'),
+        docContentInput: document.getElementById('docContent'),
+        previewContentBtn: document.getElementById('previewContentBtn'),
+        saveContentBtn: document.getElementById('saveContentBtn')
     };
 
     // 狀態管理
@@ -496,6 +499,139 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             ui.showError('上傳失敗：' + error.message);
         }
+    }
+
+    // 輔助函數 - 顯示提示框
+    function showToast(message, type = 'info', duration = 3000) {
+        // 移除所有現有的提示框
+        document.querySelectorAll('.toast-notification').forEach(toast => {
+            document.body.removeChild(toast);
+        });
+        
+        // 創建新的提示框
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        // 設置定時器移除提示框
+        setTimeout(() => {
+            if (document.body.contains(toast)) {
+                document.body.removeChild(toast);
+            }
+        }, duration);
+        
+        return toast;
+    }
+
+    // 文本輸入和保存為 Markdown 文件
+    if (elements.textInputForm && elements.previewContentBtn && elements.saveContentBtn) {
+        // 預覽內容按鈕點擊事件
+        elements.previewContentBtn.addEventListener('click', function() {
+            const title = elements.docTitleInput.value.trim();
+            const content = elements.docContentInput.value.trim();
+            
+            if (!content) {
+                showToast('請輸入文檔內容', 'error');
+                return;
+            }
+            
+            // 使用現有的預覽模態框顯示內容
+            const previewTitle = title || '未命名文檔';
+            
+            // 打開預覽模態框
+            const previewModal = document.getElementById('previewModal');
+            const previewTitleElement = document.getElementById('previewTitle');
+            const previewContentElement = document.getElementById('previewContent');
+            
+            previewTitleElement.textContent = previewTitle;
+            
+            // 使用 markdown-it 渲染內容
+            if (typeof markdownit !== 'undefined') {
+                const md = markdownit({
+                    html: true,
+                    linkify: true,
+                    typographer: true,
+                    highlight: function (str, lang) {
+                        if (lang && hljs.getLanguage(lang)) {
+                            try {
+                                return hljs.highlight(str, { language: lang }).value;
+                            } catch (__) {}
+                        }
+                        return ''; // 使用外部默認轉義
+                    }
+                });
+                previewContentElement.innerHTML = md.render(content);
+            } else {
+                // 如果 markdown-it 不可用，使用 marked 作為備用
+                try {
+                    previewContentElement.innerHTML = marked.parse(content);
+                } catch (e) {
+                    previewContentElement.innerHTML = `<pre>${content}</pre>`;
+                }
+            }
+            
+            // 顯示模態框
+            previewModal.classList.remove('hidden');
+        });
+
+        // 表單提交事件 - 保存為文檔
+        elements.textInputForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const title = elements.docTitleInput.value.trim();
+            const content = elements.docContentInput.value.trim();
+            
+            if (!title) {
+                showToast('請輸入文檔標題', 'error');
+                return;
+            }
+            
+            if (!content) {
+                showToast('請輸入文檔內容', 'error');
+                return;
+            }
+            
+            // 創建 Blob 對象
+            const blob = new Blob([content], { type: 'text/markdown' });
+            const fileName = `${title}.md`;
+            
+            // 創建 FormData 對象
+            const formData = new FormData();
+            formData.append('file', blob, fileName);
+            
+            // 顯示上傳中提示
+            const loadingToast = showToast('正在上傳文檔...', 'info');
+            
+            // 發送到服務器
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('上傳失敗');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // 顯示成功提示
+                showToast('文檔上傳成功！', 'success');
+                
+                // 清空表單
+                elements.docTitleInput.value = '';
+                elements.docContentInput.value = '';
+                
+                // 刷新文檔列表
+                fetchDocuments();
+            })
+            .catch(error => {
+                console.error('上傳錯誤:', error);
+                
+                // 顯示錯誤提示
+                showToast('文檔上傳失敗！', 'error');
+            });
+        });
     }
 
     // 事件監聽器
