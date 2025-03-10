@@ -3,53 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 測試系統</title>
+    <title>AI 文本問答系統</title>
     <!-- 外部樣式 -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.4.1/dist/typography.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
     <script>
-        // 檢查用戶偏好的主題
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            document.documentElement.classList.remove('light');
-        } else {
-            document.documentElement.classList.add('light');
-            document.documentElement.classList.remove('dark');
+        // 初始化深色模式
+        function initTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+            } else {
+                document.documentElement.classList.add('light');
+                document.documentElement.classList.remove('dark');
+            }
         }
+
+        // 當頁面載入時初始化主題
+        initTheme();
     </script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
-    <!-- 導航欄 -->
-    <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700" id="mainNav">
-        <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-            <a href="#" class="flex items-center space-x-3">
-                <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                <span class="self-center text-2xl font-semibold whitespace-nowrap text-gray-900 dark:text-white">AI 測試系統</span>
-            </a>
-            <button data-collapse-toggle="navbar-main" type="button" 
-                    class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 dark:text-gray-400 rounded-lg md:hidden hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600" 
-                    aria-controls="navbar-main" aria-expanded="false">
-                <span class="sr-only">打開主選單</span>
-                <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
-                </svg>
-            </button>
-            <div class="hidden w-full md:block md:w-auto" id="navbar-main">
-                <div class="flex flex-col md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-transparent dark:bg-gray-800 md:dark:bg-transparent dark:border-gray-700">
-                    <a href="/" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">首頁</a>
-                    <a href="/upload.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">上傳文本</a>
-                    <a href="/text-input.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">直接輸入</a>
-                    <a href="/convert.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">轉文字檔</a>
-                    <a href="/help.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">使用說明</a>
-                </div>
-            </div>
-        </div>
-    </nav>
-
     <!-- 主要內容 -->
     <div class="container mx-auto px-4 pt-8">
         <h1 class="text-4xl font-bold mb-8 text-center text-gray-800 dark:text-white">RAG 文本問答系統</h1>
@@ -59,11 +35,11 @@
             <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">提問</h2>
             <form id="queryForm" class="space-y-4">
                 <div>
-                    <label for="question" class="block text-sm font-medium text-gray-700 dark:text-gray-300">請簡述想知道的資訊。<br>相關背景知識庫可由下面文本列表查看。<br>亦可新增知識庫，提供檔案上傳與文字輸入。</label>
+                    <label for="question" class="block text-sm font-medium text-gray-700 dark:text-gray-300">請簡述想知道的資訊。<br>相關背景知識庫可由下面文本列表查看。<br>亦可新增知識庫，提供檔案上傳與文字輸入。<br><br>問題範例：結案後要做什麼事情？</label>
                     <textarea id="question" rows="3" 
                         class="mt-1 block w-full rounded-md border-gray-500 dark:border-gray-50 border shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white"></textarea>
+                    <div class="text-red-500 dark:text-yellow-300">註：伺服器支援有限，請勿快速重複提問，遇到無法回應時請稍後1分鐘</div>
                 </div>
-
                 <div>
                     <label for="similarity" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         當檢索結果不夠滿意時，亦可調整相似度閾值，數值越小代表寬容度越高，越容易找到文件，但可能會犧牲精確性。<br>
@@ -239,111 +215,13 @@
     </div>
 
     <!-- 深色/淺色模式切換按鈕 -->
-    <button id="themeToggle" class="fixed bottom-6 right-6 p-3 rounded-full bg-white shadow-lg z-50 transition-all duration-300 hover:shadow-xl">
-        <!-- 太陽圖標 (淺色模式顯示) -->
-        <svg id="sunIcon" class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: block;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-        </svg>
-        <!-- 月亮圖標 (深色模式顯示) -->
-        <svg id="moonIcon" class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-        </svg>
-    </button>
 
     <!-- 外部腳本 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+    <script src="/js/navbar.js"></script>
+    <script src="/js/theme.js"></script>
     <script src="/js/app.js"></script>
-    
-    <!-- 主題切換腳本 -->
-    <script>
-        // 等待頁面完全加載
-        window.addEventListener('load', function() {
-            // 獲取主題切換按鈕
-            const themeToggleBtn = document.getElementById('themeToggle');
-            const htmlElement = document.documentElement;
-            
-            // 檢查當前主題並設置正確的圖標顯示
-            function updateThemeIcons() {
-                const isDark = htmlElement.classList.contains('dark');
-                document.getElementById('sunIcon').style.display = isDark ? 'none' : 'block';
-                document.getElementById('moonIcon').style.display = isDark ? 'block' : 'none';
-            }
-            
-            // 初始化時更新圖標
-            updateThemeIcons();
-            
-            // 強制應用深色模式樣式
-            function forceStyleRefresh() {
-                // 添加一個臨時類別然後移除它，強制瀏覽器重新計算樣式
-                document.body.classList.add('theme-refresh');
-                setTimeout(() => {
-                    document.body.classList.remove('theme-refresh');
-                }, 10);
-                
-                // 特殊處理導航欄
-                const mainNav = document.getElementById('mainNav');
-                const navItems = document.getElementById('navItems');
-                const navbarMain = document.getElementById('navbar-main');
-                
-                if (htmlElement.classList.contains('dark')) {
-                    // 深色模式
-                    if (mainNav) mainNav.style.backgroundColor = '#1e1e2d';
-                    if (navItems) navItems.style.backgroundColor = '#1e1e2d';
-                    if (navbarMain) navbarMain.style.backgroundColor = '#1e1e2d';
-                } else {
-                    // 淺色模式
-                    if (mainNav) mainNav.style.backgroundColor = '';
-                    if (navItems) navItems.style.backgroundColor = '';
-                    if (navbarMain) navbarMain.style.backgroundColor = '';
-                }
-                
-                // 觸發 resize 事件
-                setTimeout(() => {
-                    window.dispatchEvent(new Event('resize'));
-                }, 50);
-            }
-            
-            // 初始化時強制應用樣式
-            forceStyleRefresh();
-            
-            if (themeToggleBtn) {
-                // 只添加一個事件監聽器
-                themeToggleBtn.addEventListener('click', function(e) {
-                    // 阻止事件冒泡
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    console.log('切換主題');
-                    
-                    // 切換深色/淺色模式
-                    if (htmlElement.classList.contains('dark')) {
-                        // 切換到淺色模式
-                        htmlElement.classList.remove('dark');
-                        htmlElement.classList.add('light');
-                        localStorage.theme = 'light';
-                        console.log('切換到淺色模式');
-                    } else {
-                        // 切換到深色模式
-                        htmlElement.classList.remove('light');
-                        htmlElement.classList.add('dark');
-                        localStorage.theme = 'dark';
-                        console.log('切換到深色模式');
-                    }
-                    
-                    // 更新圖標顯示
-                    updateThemeIcons();
-                    
-                    // 強制重新應用樣式
-                    forceStyleRefresh();
-                });
-                
-                console.log('主題切換按鈕事件已綁定');
-            } else {
-                console.error('找不到主題切換按鈕');
-            }
-        });
-    </script>
 </body>
 </html> 
