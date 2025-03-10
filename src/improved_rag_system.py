@@ -55,7 +55,7 @@ class ImprovedRAGSystem:
         try:
             # 初始化 Gemini
             genai.configure(api_key=self.config['gemini']['api_key'])
-            self.model = genai.GenerativeModel('gemini-1.5-pro')  # 使用 1.5 版本
+            self.model = genai.GenerativeModel('gemini-1.5-flash')  # 使用 1.5 版本
             
             # 初始化 Sentence Transformer
             self.embedding_model = SentenceTransformer(
@@ -234,7 +234,7 @@ class ImprovedRAGSystem:
             
             if not results["documents"][0]:
                 logger.warning("沒有找到任何相關文字")
-                return {"answer": "抱歉，我在文件中找不到相關的資訊。", "sources": []}
+                return {"answer": "抱歉，我在文件中找不到相關的資訊。", "sources": [], "enhanced_prompt": ""}
             
             # 計算並輸出所有檢索結果的相似度
             all_results = []
@@ -299,7 +299,8 @@ class ImprovedRAGSystem:
                 logger.warning(f"沒有文字通過相似度閾值 {threshold} 的過濾")
                 return {
                     "answer": f"抱歉，沒有找到相似度高於 {threshold:.2f} 的相關文字。請嘗試調低相似度閾值。",
-                    "sources": []
+                    "sources": [],
+                    "enhanced_prompt": ""
                 }
             
             logger.info(f"過濾後保留了 {len(filtered_chunks)} 個相關片段，來自 {len(filtered_sources)} 個文件")
@@ -331,9 +332,10 @@ class ImprovedRAGSystem:
             
             return {
                 "answer": answer,
-                "sources": list(filtered_sources)
+                "sources": list(filtered_sources),
+                "enhanced_prompt": prompt
             }
             
         except Exception as e:
             logger.error(f"查詢處理失敗：{str(e)}")
-            return {"answer": "抱歉，處理查詢時出現錯誤。", "sources": []} 
+            return {"answer": "抱歉，處理查詢時出現錯誤。", "sources": [], "enhanced_prompt": ""} 

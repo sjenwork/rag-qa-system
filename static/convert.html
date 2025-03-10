@@ -3,168 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>轉文字檔 - RAG 文本問答系統</title>
+    <title>轉文字檔 - AI 文本問答系統</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="/css/styles.css" rel="stylesheet">
-    <script>
-        // 檢查用戶偏好的主題
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            document.documentElement.classList.remove('light');
-        } else {
-            document.documentElement.classList.add('light');
-            document.documentElement.classList.remove('dark');
+    <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.4.1/dist/typography.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/ai/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <style>
+        /* 覆蓋 typography 的連結樣式 */
+        .prose a {
+            text-decoration: none !important;
+            font-weight: normal !important;
         }
+        
+        /* 深色模式下的連結樣式 */
+        .dark .prose a {
+            color: #60A5FA !important; /* blue-400 */
+        }
+        
+        .dark .prose a:hover {
+            color: #93C5FD !important; /* blue-300 */
+        }
+        
+        /* 淺色模式下的連結樣式 */
+        .prose a {
+            color: #2563EB !important; /* blue-600 */
+        }
+        
+        .prose a:hover {
+            color: #1D4ED8 !important; /* blue-800 */
+        }
+    </style>
+    <script>
+        // 初始化深色模式
+        function initTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+            } else {
+                document.documentElement.classList.add('light');
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        // 當頁面載入時初始化主題
+        initTheme();
     </script>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900">
-    <!-- 導航欄 -->
-    <nav class="bg-white dark:bg-gray-800 fixed w-full z-20 top-0 left-0 border-b border-gray-200 dark:border-gray-600">
-        <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-            <a href="/" class="flex items-center">
-                <span class="self-center text-2xl font-semibold whitespace-nowrap text-gray-900 dark:text-white">RAG 文本問答系統</span>
-            </a>
-            <button data-collapse-toggle="navbar-main" type="button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
-                <span class="sr-only">開啟主選單</span>
-                <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
-                </svg>
-            </button>
-            <div class="hidden w-full md:block md:w-auto" id="navbar-main">
-                <div class="flex flex-col md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-transparent dark:bg-gray-800 md:dark:bg-transparent dark:border-gray-700">
-                    <a href="/" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">首頁</a>
-                    <a href="/upload.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">上傳文本</a>
-                    <a href="/text-input.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">直接輸入</a>
-                    <a href="/convert.html" class="nav-link block py-2 pl-3 pr-4 text-blue-700 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-blue-500 md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">轉文字檔</a>
-                    <a href="/help.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">使用說明</a>
-                </div>
-            </div>
-        </div>
-    </nav>
-
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
     <!-- 主要內容 -->
-    <div class="container mx-auto px-4 pt-20">
-        <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mt-8">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">轉文字檔</h1>
-            
-            <!-- 檔案上傳區域 -->
-            <div id="dropZone" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center mb-6">
-                <div class="space-y-4">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                        <path d="M28 8H12a4 4 0 00-4 4v20m0 0v4a4 4 0 004 4h20a4 4 0 004-4V28m-4-4h4M8 32h4m16-24v4m-4-4h4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    <p class="text-gray-600 dark:text-gray-300">拖放檔案到此處，或</p>
-                    <div class="flex flex-col items-center space-y-3">
-                        <button type="button" id="selectFileBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                            選擇檔案
-                        </button>
-                        <button type="button" id="uploadBtn" class="hidden px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                            開始上傳
-                        </button>
-                    </div>
-                    <input type="file" id="fileInput" class="hidden" accept=".png,.jpg,.jpeg,.pdf">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">支援的格式：PNG、JPG、PDF</p>
-                    <p id="selectedFileName" class="text-sm text-gray-600 dark:text-gray-300 hidden"></p>
-                </div>
-            </div>
-
-            <!-- 轉換結果區域 -->
-            <div id="results" class="hidden space-y-4">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">轉換結果</h2>
-                <div id="resultsList" class="space-y-4">
-                    <!-- 結果將在這裡動態添加 -->
-                </div>
-            </div>
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 dark:text-white">檔案轉換</h1>
+            <a href="/help.html" target="_blank" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                </svg>
+                使用說明
+            </a>
         </div>
+
+        <!-- 上傳區塊 -->
+        <section class="section-card bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">上傳檔案</h2>
+            <form id="convertForm">
+                <div id="convertDropZone" class="drop-zone bg-gray-50 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 p-4">
+                    <p class="text-base text-gray-600 dark:text-gray-300 mb-2">拖拽檔案到此處或點擊上傳</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">支援 PDF、Word、Excel 等格式</p>
+                    <input type="file" id="convertFileInput" class="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx">
+                    <button type="button" id="selectConvertFileBtn" 
+                        class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        選擇檔案
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- 轉換結果區塊 -->
+        <section id="resultSection" class="section-card bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 mb-8 hidden">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">轉換結果</h2>
+            <div class="space-y-4">
+                <div id="convertResult" class="prose dark:prose-dark max-w-none"></div>
+                <div class="flex justify-end space-x-4">
+                    <button id="downloadBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        下載文字檔
+                    </button>
+                    <button id="copyBtn" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        複製內容
+                    </button>
+                </div>
+            </div>
+        </section>
     </div>
 
-    <!-- 深色/淺色模式切換按鈕 -->
-    <button id="themeToggle" class="fixed bottom-6 right-6 p-3 rounded-full bg-white shadow-lg z-50 transition-all duration-300 hover:shadow-xl">
-        <!-- 太陽圖標 (淺色模式顯示) -->
-        <svg id="sunIcon" class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: block;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-        </svg>
-        <!-- 月亮圖標 (深色模式顯示) -->
-        <svg id="moonIcon" class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-        </svg>
-    </button>
-
-    <!-- Toast 通知 -->
-    <div id="toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-white text-sm hidden transition-all duration-300 z-50">
-        <span id="toastMessage"></span>
-    </div>
-
-    <!-- 外部腳本 -->
-    <script src="/js/convert.js"></script>
-    
-    <!-- 主題切換腳本 -->
+    <!-- JavaScript -->
+    <script src="/ai/js/navbar.js"></script>
+    <script src="/ai/js/theme.js"></script>
     <script>
-        // 等待頁面完全加載
-        window.addEventListener('load', function() {
-            // 獲取主題切換按鈕
-            const themeToggleBtn = document.getElementById('themeToggle');
-            const htmlElement = document.documentElement;
+        document.addEventListener('DOMContentLoaded', function() {
+            const convertForm = document.getElementById('convertForm');
+            const convertDropZone = document.getElementById('convertDropZone');
+            const convertFileInput = document.getElementById('convertFileInput');
+            const selectConvertFileBtn = document.getElementById('selectConvertFileBtn');
+            const resultSection = document.getElementById('resultSection');
+            const convertResult = document.getElementById('convertResult');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const copyBtn = document.getElementById('copyBtn');
             
-            // 檢查當前主題並設置正確的圖標顯示
-            function updateThemeIcons() {
-                const isDark = htmlElement.classList.contains('dark');
-                document.getElementById('sunIcon').style.display = isDark ? 'none' : 'block';
-                document.getElementById('moonIcon').style.display = isDark ? 'block' : 'none';
-            }
-            
-            // 初始化時更新圖標
-            updateThemeIcons();
-            
-            // 強制應用深色模式樣式
-            function forceStyleRefresh() {
-                document.body.classList.add('theme-refresh');
-                setTimeout(() => {
-                    document.body.classList.remove('theme-refresh');
-                }, 10);
-                
-                // 特殊處理導航欄
-                const mainNav = document.getElementById('mainNav');
-                const navItems = document.getElementById('navItems');
-                const navbarMain = document.getElementById('navbar-main');
-                
-                if (htmlElement.classList.contains('dark')) {
-                    // 深色模式
-                    if (mainNav) mainNav.style.backgroundColor = '#1e1e2d';
-                    if (navItems) navItems.style.backgroundColor = '#1e1e2d';
-                    if (navbarMain) navbarMain.style.backgroundColor = '#1e1e2d';
-                } else {
-                    // 淺色模式
-                    if (mainNav) mainNav.style.backgroundColor = '';
-                    if (navItems) navItems.style.backgroundColor = '';
-                    if (navbarMain) navbarMain.style.backgroundColor = '';
+            // 點擊選擇檔案按鈕
+            selectConvertFileBtn.addEventListener('click', () => {
+                convertFileInput.click();
+            });
+
+            // 處理檔案選擇
+            convertFileInput.addEventListener('change', handleFileSelect);
+
+            // 處理拖放
+            convertDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                convertDropZone.classList.add('border-blue-500');
+            });
+
+            convertDropZone.addEventListener('dragleave', () => {
+                convertDropZone.classList.remove('border-blue-500');
+            });
+
+            convertDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                convertDropZone.classList.remove('border-blue-500');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    convertFileInput.files = files;
+                    handleFileSelect({ target: convertFileInput });
                 }
-                
-                setTimeout(() => {
-                    window.dispatchEvent(new Event('resize'));
-                }, 50);
-            }
-            
-            // 初始化時強制應用樣式
-            forceStyleRefresh();
-            
-            if (themeToggleBtn) {
-                themeToggleBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    if (htmlElement.classList.contains('dark')) {
-                        htmlElement.classList.remove('dark');
-                        htmlElement.classList.add('light');
-                        localStorage.theme = 'light';
-                    } else {
-                        htmlElement.classList.remove('light');
-                        htmlElement.classList.add('dark');
-                        localStorage.theme = 'dark';
+            });
+
+            // 處理檔案上傳和轉換
+            function handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // 顯示載入中狀態
+                convertResult.innerHTML = '<p class="text-gray-600 dark:text-gray-400">正在處理檔案...</p>';
+                resultSection.classList.remove('hidden');
+
+                // 發送檔案到伺服器進行轉換
+                fetch('/ai/convert', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        convertResult.innerHTML = `<p class="text-red-500">轉換失敗：${data.error}</p>`;
+                        downloadBtn.disabled = true;
+                        copyBtn.disabled = true;
+                        return;
                     }
                     
-                    updateThemeIcons();
-                    forceStyleRefresh();
+                    if (data.tables && data.tables.length > 0) {
+                        // 顯示轉換結果
+                        const tableLinks = data.tables.map(table => `
+                            <div class="mb-4">
+                                <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">${table.name}</h3>
+                                <div class="space-x-4">
+                                    <a href="${table.json}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300" download>下載 JSON</a>
+                                    <a href="${table.csv}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300" download>下載 CSV</a>
+                                    <a href="${table.excel}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300" download>下載 Excel</a>
+                                </div>
+                            </div>
+                        `).join('');
+                        
+                        convertResult.innerHTML = tableLinks;
+                        downloadBtn.disabled = false;
+                        copyBtn.disabled = false;
+                    } else {
+                        convertResult.innerHTML = '<p class="text-red-500">轉換失敗：未能產生任何表格資料</p>';
+                        downloadBtn.disabled = true;
+                        copyBtn.disabled = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    convertResult.innerHTML = '<p class="text-red-500">處理檔案時發生錯誤，請稍後再試。</p>';
+                    downloadBtn.disabled = true;
+                    copyBtn.disabled = true;
                 });
             }
         });

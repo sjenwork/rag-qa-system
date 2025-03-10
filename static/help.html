@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用說明 - AI 文本問答系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.4.1/dist/typography.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/ai/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* 深色模式樣式 */
+        .prose {
+            max-width: none !important;
+        }
+        .dark .prose {
+            color: #D1D5DB;
+        }
+        .dark .prose h1, 
+        .dark .prose h2, 
+        .dark .prose h3 {
+            color: #F3F4F6;
+        }
+        .dark .prose strong {
+            color: #F3F4F6;
+        }
+        .dark .prose ul > li::before {
+            background-color: #6B7280;
+        }
+        .dark .prose hr {
+            border-color: #4B5563;
+        }
+        .dark .prose blockquote {
+            border-color: #4B5563;
+            color: #9CA3AF;
+        }
+    </style>
+    <script>
+        // 初始化深色模式
+        function initTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+            } else {
+                document.documentElement.classList.add('light');
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        // 當頁面載入時初始化主題
+        initTheme();
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 dark:text-white">使用說明</h1>
+        </div>
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-8">
+            <article id="content" class="prose dark:prose-dark max-w-none">
+                <!-- Markdown 內容將在這裡渲染 -->
+            </article>
+        </div>
+    </div>
+
+    <script src="/ai/js/navbar.js"></script>
+    <script src="/ai/js/theme.js"></script>
+    <script>
+        // 載入並渲染 Markdown 內容
+        fetch('/ai/docs/help.md')
+            .then(response => response.text())
+            .then(text => {
+                document.getElementById('content').innerHTML = marked.parse(text);
+            })
+            .catch(error => {
+                document.getElementById('content').innerHTML = '<p class="text-red-500">載入說明文件失敗，請稍後再試。</p>';
+                console.error('Error:', error);
+            });
+    </script>
+</body>
+</html> 

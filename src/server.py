@@ -1,7 +1,7 @@
 from typing import List, Optional
 import os
 import yaml
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -17,6 +17,15 @@ import traceback
 from pathlib import Path
 import shutil
 import time
+import asyncio
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
+import logging
+
+# 配置日誌
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # 載入設定
 with open("config.yaml", "r", encoding="utf-8") as f:
@@ -24,9 +33,33 @@ with open("config.yaml", "r", encoding="utf-8") as f:
 
 # 初始化 Gemini 模型
 genai.configure(api_key=config["gemini"]["api_key"])
-model = genai.GenerativeModel('gemini-1.5-pro')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-app = FastAPI(title="RAG System API")
+# 初始化 FastAPI 應用
+app = FastAPI(title="RAG System API", root_path="/ai")
+
+# 超時中間件
+class TimeoutMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:
+        try:
+            # 設置 60 秒超時
+            response = await asyncio.wait_for(call_next(request), timeout=60.0)
+            return response
+        except asyncio.TimeoutError:
+            logger.error(f"Request timeout: {request.url}")
+            return JSONResponse(
+                status_code=504,
+                content={"detail": "請求處理超時，請稍後重試"}
+            )
+        except Exception as e:
+            logger.error(f"Error processing request: {str(e)}")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "處理請求時發生錯誤"}
+            )
+
+# 添加中間件
+app.add_middleware(TimeoutMiddleware)
 
 # 設定 CORS
 app.add_middleware(
@@ -48,6 +81,7 @@ class Question(BaseModel):
 class Answer(BaseModel):
     answer: str
     sources: List[str]
+    enhanced_prompt: str  # 添加強化後的提示詞字段
 
 class Document(BaseModel):
     filename: str
@@ -78,7 +112,7 @@ async def list_documents():
     return documents
 
 @app.post("/query", response_model=Answer)
-async def query(question: Question):
+async def query(question: Question, background_tasks: BackgroundTasks):
     """查詢文件"""
     try:
         # 使用使用者提供的閾值或預設值
@@ -89,9 +123,22 @@ async def query(question: Question):
             max_threshold = config["server"]["similarity_settings"]["max_threshold"]
             threshold = max(min_threshold, min(max_threshold, threshold))
         
-        result = rag_system.query(question.text, threshold)
-        return Answer(answer=result["answer"], sources=result["sources"])
+        # 使用背景任務處理查詢
+        result = await asyncio.wait_for(
+            asyncio.to_thread(rag_system.query, question.text, threshold),
+            timeout=30.0  # 設置 30 秒超時
+        )
+        
+        return Answer(
+            answer=result["answer"], 
+            sources=result["sources"],
+            enhanced_prompt=result.get("enhanced_prompt", "未提供強化後的提示詞")  # 添加強化後的提示詞
+        )
+    except asyncio.TimeoutError:
+        logger.error(f"Query timeout for question: {question.text}")
+        raise HTTPException(status_code=504, detail="查詢處理超時，請稍後重試")
     except Exception as e:
+        logger.error(f"Query error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/upload")
@@ -270,9 +317,9 @@ async def save_table_formats(data, base_name, output_dir):
     # 回傳相對於伺服器的路徑
     return {
         "name": base_name,
-        "json": f"/output/{json_filename}",
-        "csv": f"/output/{csv_filename}",
-        "excel": f"/output/{excel_filename}"
+        "json": f"/ai/output/{json_filename}",
+        "csv": f"/ai/output/{csv_filename}",
+        "excel": f"/ai/output/{excel_filename}"
     }
 
 @app.post("/convert")
@@ -350,9 +397,10 @@ async def convert_file(file: UploadFile = File(...)):
         if file_path.exists():
             file_path.unlink()
 
-# 掛載靜態檔案（前端頁面和輸出檔案）
+# 掛載靜態文件
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/output", StaticFiles(directory="output"), name="output")
+app.mount("/docs", StaticFiles(directory="docs"), name="docs")
 
 # 掛載根路徑的 HTML 檔案
 app.mount("/", StaticFiles(directory="static", html=True), name="html")
@@ -399,6 +447,18 @@ async def startup_event():
                         print(f"載入新文件：{filename}")
             except Exception as e:
                 print(f"載入文件 {filename} 時發生錯誤：{str(e)}")
+
+# 健康檢查端點
+@app.get("/health")
+async def health_check():
+    """健康檢查端點"""
+    try:
+        # 檢查 RAG 系統是否正常
+        rag_system.collection.get()
+        return {"status": "healthy", "timestamp": time.time()}
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        raise HTTPException(status_code=503, detail="系統異常")
 
 if __name__ == "__main__":
     # 啟動伺服器

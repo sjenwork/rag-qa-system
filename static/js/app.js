@@ -32,29 +32,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // DOM 元素
     const elements = {
-        queryForm: document.getElementById('queryForm'),
-        question: document.getElementById('question'),
-        similarity: document.getElementById('similarity'),
-        similarityValue: document.getElementById('similarityValue'),
-        answer: document.getElementById('answer'),
-        answerText: document.getElementById('answerText'),
-        sources: document.getElementById('sources'),
-        sourcesList: document.getElementById('sourcesList'),
-        documents: document.getElementById('documents'),
-        dropZone: document.getElementById('dropZone'),
-        fileInput: document.getElementById('fileInput'),
-        selectFileBtn: document.getElementById('selectFileBtn'),
-        uploadForm: document.getElementById('uploadForm'),
-        adminPassword: document.getElementById('adminPassword'),
-        navbarToggle: document.querySelector('[data-collapse-toggle="navbar-main"]'),
-        navbarMenu: document.getElementById('navbar-main'),
-        textInputForm: document.getElementById('textInputForm'),
-        docTitleInput: document.getElementById('docTitle'),
-        docContentInput: document.getElementById('docContent'),
-        previewContentBtn: document.getElementById('previewContentBtn'),
-        saveContentBtn: document.getElementById('saveContentBtn'),
-        uploadModal: document.getElementById('uploadModal'),
-        uploadPassword: document.getElementById('uploadPassword')
+        queryForm: $('#queryForm'),
+        question: $('#question'),
+        similarity: $('#similarity'),
+        similarityValue: $('#similarityValue'),
+        answer: $('#answer'),
+        answerText: $('#answerText'),
+        sources: $('#sources'),
+        sourcesList: $('#sourcesList'),
+        documents: $('#documents'),
+        dropZone: $('#dropZone'),
+        fileInput: $('#fileInput'),
+        selectFileBtn: $('#selectFileBtn'),
+        uploadForm: $('#uploadForm'),
+        adminPassword: $('#adminPassword') || document.createElement('input'),
+        navbarToggle: $('[data-collapse-toggle="navbar-main"]'),
+        navbarMenu: $('#navbar-main'),
+        textInputForm: $('#textInputForm'),
+        docTitleInput: $('#docTitle'),
+        docContentInput: $('#docContent'),
+        previewContentBtn: $('#previewContentBtn'),
+        saveContentBtn: $('#saveContentBtn'),
+        uploadModal: $('#uploadModal'),
+        uploadPassword: $('#uploadPassword'),
+        previewModal: $('#previewModal'),
+        previewTitle: $('#previewTitle'),
+        previewContent: $('#previewContent'),
+        deleteModal: $('#deleteModal')
     };
 
     // 狀態管理
@@ -176,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const api = {
         async query(question, similarity) {
             try {
-                const response = await fetch('/query', {
+                const response = await fetch('/ai/query', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -200,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async getDocuments() {
             try {
-                const response = await fetch('/documents');
+                const response = await fetch('/ai/documents');
                 if (!response.ok) {
                     throw new Error(await response.text());
                 }
@@ -214,8 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         async getDocumentContent(filename) {
             try {
                 console.log('獲取文本內容:', filename);
-                // 嘗試使用正確的 API 路徑
-                const response = await fetch(`/documents/${encodeURIComponent(filename)}/content`);
+                const response = await fetch(`/ai/documents/${encodeURIComponent(filename)}/content`);
                 if (!response.ok) {
                     throw new Error(await response.text());
                 }
@@ -234,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formData = new FormData();
                 formData.append('password', password);
                 
-                const response = await fetch(`/documents/${filename}`, {
+                const response = await fetch(`/ai/documents/${filename}`, {
                     method: 'DELETE',
                     body: formData
                 });
@@ -333,17 +336,63 @@ document.addEventListener('DOMContentLoaded', () => {
     // UI 更新
     const ui = {
         updateSimilarityValue() {
-            elements.similarityValue.textContent = elements.similarity.value;
+            if (elements.similarityValue) {
+                elements.similarityValue.textContent = elements.similarity.value;
+            }
         },
 
-        showAnswer(answer, sources) {
-            console.log('顯示回答:', { answer, sources });
+        showAnswer(answer, sources, enhancedPrompt) {
+            console.log('顯示回答:', { answer, sources, enhancedPrompt });
             try {
-                // 使用 markdown-it 而不是 marked
-                elements.answerText.innerHTML = window.md.render(answer);
-                elements.sourcesList.innerHTML = sources
-                    .map(source => `<li>${source}</li>`)
-                    .join('');
+                // 來源標題
+                const sourcesTitleHtml = sources.length > 0 ? `
+                    <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">參考來源</h3>
+                ` : '';
+
+                // 來源內容
+                const sourcesContentHtml = sources.length > 0 ? `
+                    <div class="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <ul class="list-disc pl-5 text-sm text-gray-600 dark:text-gray-400">
+                            ${sources.map(source => `<li>${source}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : '';
+
+                // 回答標題
+                const answerTitleHtml = `
+                    <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">回答</h3>
+                `;
+
+                // 回答內容
+                const answerContentHtml = `
+                    <div class="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <div class="prose dark:prose-invert max-w-none">
+                            ${window.md.render(answer)}
+                        </div>
+                    </div>
+                `;
+
+                // 強化後的提示詞標題
+                const promptTitleHtml = enhancedPrompt ? `
+                    <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">強化後的提示詞</h3>
+                ` : '';
+
+                // 強化後的提示詞內容
+                const promptContentHtml = enhancedPrompt ? `
+                    <div class="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <div class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">${enhancedPrompt}</div>
+                    </div>
+                ` : '';
+
+                // 組合所有內容
+                elements.answerText.innerHTML = `
+                    ${sourcesTitleHtml}
+                    ${sourcesContentHtml}
+                    ${answerTitleHtml}
+                    ${answerContentHtml}
+                    ${promptTitleHtml}
+                    ${promptContentHtml}
+                `;
                 elements.answer.classList.remove('hidden');
             } catch (error) {
                 console.error('渲染回答失敗:', error);
@@ -358,91 +407,107 @@ document.addEventListener('DOMContentLoaded', () => {
 
         refreshDocumentList(documents) {
             console.log('刷新文本列表:', documents);
-            if (!elements.documents) return;
-            
-            if (!documents || documents.length === 0) {
-                elements.documents.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-4">暫無文本</p>';
+            if (!elements.documents) {
+                console.error('找不到文件列表容器元素');
                 return;
             }
             
-            const docHTML = documents.map(doc => {
-                return `
-                <div class="doc-card">
-                    <div class="doc-card-content">
-                        <div class="doc-card-title">${doc}</div>
-                        <div class="doc-card-actions">
-                            <button class="action-btn preview-btn" data-filename="${doc}" aria-label="預覽">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                            </button>
-                            <button class="action-btn delete-btn" data-filename="${doc}" aria-label="刪除">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
-                        </div>
+            if (!documents || documents.length === 0) {
+                elements.documents.innerHTML = `
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">尚無文件</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">您可以透過上傳或直接輸入來新增文件</p>
                     </div>
-                </div>`;
-            }).join('');
+                `;
+                return;
+            }
+            
+            const docHTML = documents.map(doc => `
+                <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow mb-3">
+                    <div class="flex-1 min-w-0 pr-4">
+                        <h3 class="text-base font-medium text-gray-900 dark:text-white truncate">
+                            ${doc}
+                        </h3>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="handlePreview('${doc}')" 
+                            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            預覽
+                        </button>
+                        <button onclick="handleDelete('${doc}')"
+                            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 rounded-md hover:bg-red-200 dark:hover:bg-red-900 transition-colors">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            刪除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
             
             elements.documents.innerHTML = docHTML;
-            
-            // 添加事件監聽器
-            document.querySelectorAll('.preview-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const filename = btn.getAttribute('data-filename');
-                    handlePreview(filename);
-                });
-            });
-            
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const filename = btn.getAttribute('data-filename');
-                    handleDelete(filename);
-                });
-            });
         },
 
         showError(message) {
             console.error('顯示錯誤:', message);
-            alert(message);
+            showToast(message, 'error');
         }
     };
 
     // 導航欄控制
     const navbar = {
         toggle: () => {
-            elements.navbarMenu.classList.toggle('hidden');
+            elements.navbarMenu?.classList.toggle('hidden');
         },
         hide: () => {
-            elements.navbarMenu.classList.add('hidden');
+            elements.navbarMenu?.classList.add('hidden');
         }
     };
 
     // 添加導航欄事件監聽
     function initializeNavbar() {
-        // 菜單切換按鈕
-        elements.navbarToggle.addEventListener('click', navbar.toggle);
+        console.log('初始化導航欄');
+        
+        // 檢查必要的元素是否存在
+        if (!elements.navbarToggle || !elements.navbarMenu) {
+            console.log('導航欄元素未找到，跳過初始化');
+            return;
+        }
 
-        // 點擊導航項時關閉菜單（移動端）
-        elements.navbarMenu.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth < 768) { // md 斷點
+        try {
+            // 菜單切換按鈕
+            elements.navbarToggle.addEventListener('click', navbar.toggle);
+
+            // 點擊導航項時關閉菜單（移動端）
+            const navLinks = elements.navbarMenu.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 768) { // md 斷點
+                        navbar.hide();
+                    }
+                });
+            });
+
+            // 點擊外部時關閉菜單
+            document.addEventListener('click', (event) => {
+                const isNavbarClick = event.target.closest('#navbar-main') || 
+                                    event.target.closest('[data-collapse-toggle="navbar-main"]');
+                if (!isNavbarClick && window.innerWidth < 768) {
                     navbar.hide();
                 }
             });
-        });
 
-        // 點擊外部時關閉菜單
-        document.addEventListener('click', (event) => {
-            const isNavbarClick = event.target.closest('#navbar-main') || 
-                                event.target.closest('[data-collapse-toggle="navbar-main"]');
-            if (!isNavbarClick && window.innerWidth < 768) {
-                navbar.hide();
-            }
-        });
+            console.log('導航欄初始化完成');
+        } catch (error) {
+            console.error('導航欄初始化失敗:', error);
+        }
     }
 
     // 事件處理
@@ -466,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('未獲得有效的回答');
             }
             
-            ui.showAnswer(result.answer, result.sources || []);
+            ui.showAnswer(result.answer, result.sources || [], result.enhanced_prompt);
         } catch (error) {
             console.error('處理查詢失敗:', error);
             ui.showError(error.message || '查詢失敗，請稍後重試');
@@ -908,14 +973,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 事件監聽器
     function initializeEventListeners() {
         // 查詢表單提交
-        if (elements.queryForm) {
-            elements.queryForm.addEventListener('submit', handleSubmit);
-        }
+        elements.queryForm?.addEventListener('submit', handleSubmit);
         
         // 相似度滑塊變化
-        if (elements.similarity) {
-            elements.similarity.addEventListener('input', ui.updateSimilarityValue);
-        }
+        elements.similarity?.addEventListener('input', ui.updateSimilarityValue);
         
         // 文件上傳區域
         if (elements.dropZone) {
@@ -953,16 +1014,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (previewModalCloseBtn) {
             console.log('找到預覽模態框關閉按鈕');
             previewModalCloseBtn.addEventListener('click', closePreviewModal);
-        } else {
-            console.error('找不到預覽模態框關閉按鈕');
         }
         
         const deleteModalCloseBtn = document.querySelector('#deleteModal button[onclick="closeDeleteModal()"]');
         if (deleteModalCloseBtn) {
             console.log('找到刪除模態框關閉按鈕');
             deleteModalCloseBtn.addEventListener('click', closeDeleteModal);
-        } else {
-            console.error('找不到刪除模態框關閉按鈕');
         }
         
         // ESC 鍵關閉模態框
@@ -974,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // 密碼輸入框按 Enter 鍵確認刪除
-        elements.adminPassword.addEventListener('keydown', function(e) {
+        elements.adminPassword?.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 confirmDelete();
@@ -982,49 +1039,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 初始化應用
-    async function initialize() {
-        console.log('初始化應用...');
-        
-        // 初始化 markdown-it
-        window.md = markdownit({
-            html: true,
-            linkify: true,
-            typographer: true,
-            highlight: function (str, lang) {
-                if (lang && hljs.getLanguage(lang)) {
-                    try {
-                        return hljs.highlight(str, { language: lang }).value;
-                    } catch (__) {}
-                }
-                return ''; // 使用外部默認轉義
-            }
-        });
-        
-        // 初始化 UI 元素
-        ui.updateSimilarityValue();
-        
-        // 初始化導航欄
-        initializeNavbar();
-        
-        // 初始化事件監聽器
-        initializeEventListeners();
-        
-        // 獲取文本列表
+    // 初始化頁面
+    async function initializePage() {
         try {
-            console.log('獲取文本列表...');
+            console.log('開始初始化頁面');
+            
+            // 初始化 markdown-it
+            window.md = window.markdownit({
+                html: true,
+                linkify: true,
+                typographer: true,
+                highlight: function (str, lang) {
+                    if (lang && hljs.getLanguage(lang)) {
+                        try {
+                            return hljs.highlight(str, { language: lang }).value;
+                        } catch (__) {}
+                    }
+                    return '';
+                }
+            });
+            
+            // 載入文件列表
+            console.log('開始載入文件列表');
             const documents = await api.getDocuments();
+            console.log('獲取到的文件列表:', documents);
             ui.refreshDocumentList(documents);
+            
+            // 初始化事件監聽器
+            initializeEventListeners();
+            
+            // 初始化導航欄
+            initializeNavbar();
+            
+            console.log('頁面初始化完成');
         } catch (error) {
-            console.error('獲取文本列表失敗:', error);
-            showToast('獲取文本列表失敗: ' + error.message, 'error');
+            console.error('初始化頁面失敗:', error);
+            showToast('初始化頁面失敗：' + error.message, 'error');
         }
-        
-        console.log('應用初始化完成');
     }
 
-    // 初始化應用
-    initialize().catch(console.error);
+    // 初始化頁面
+    initializePage();
 
     // 全局函數
     window.closePreviewModal = closePreviewModal;

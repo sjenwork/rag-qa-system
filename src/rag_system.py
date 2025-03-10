@@ -13,7 +13,7 @@ class RAGSystem:
         
         # Initialize Gemini
         genai.configure(api_key=config['gemini']['api_key'])
-        self.model = genai.GenerativeModel('gemini-1.5-pro')
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
         
         # Initialize ChromaDB
         self.client = chromadb.HttpClient(host="localhost", port=8000)
