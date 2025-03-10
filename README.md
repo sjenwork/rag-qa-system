@@ -21,6 +21,7 @@
 ## 系統需求
 
 - Python 3.8 以上版本
+- Docker 和 Docker Compose
 - ChromaDB 伺服器
 - Gemini API 金鑰
 - 現代化瀏覽器（支援 ES6+）
@@ -32,10 +33,42 @@
 pip install -r requirements.txt
 ```
 
-2. 系統設定：
+2. 啟動 ChromaDB 和相關服務：
+```bash
+# 啟動所有服務
+docker-compose up -d
+
+# 檢查服務狀態
+docker-compose ps
+```
+
+3. 系統設定：
 - 複製 `config.yaml` 並填寫必要的設定資訊
 - 確認 ChromaDB 伺服器已啟動
 - 設定有效的 Gemini API 金鑰
+
+## 資料庫設定
+
+系統使用 ChromaDB 作為向量資料庫。相關配置在 `docker-compose.yml` 中定義：
+
+```yaml
+services:
+  chroma:
+    image: chromadb/chroma:latest
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_PORT=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/chromadb:/chroma/data
+    restart: unless-stopped
+```
+
+確保在啟動系統前：
+1. Docker 服務正在運行
+2. ChromaDB 容器已成功啟動
+3. 資料目錄具有適當的權限
 
 ## 使用說明
 

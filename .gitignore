@@ -24,8 +24,15 @@ data/*
 # 配置文件
 config.yaml
 
+# 輸出文件
+output/*
+!output/.gitkeep
+
 # IDE
 .vscode/
 .idea/
 *.swp
-*.swo 
+*.swo
+
+# 確保 CSS 文件被追踪
+!static/css/styles.css 
