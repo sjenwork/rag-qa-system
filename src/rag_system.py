@@ -35,7 +35,7 @@ class RAGSystem:
         )
     
     def get_document_hash(self, text, metadata):
-        """計算文檔的哈希值"""
+        """計算文本的哈希值"""
         content = f"{text}{str(metadata)}"
         return hashlib.md5(content.encode()).hexdigest()
     
@@ -56,11 +56,11 @@ class RAGSystem:
         if metadata is None:
             metadata = {}
             
-        # 計算文檔哈希
+        # 計算文本哈希
         doc_hash = self.get_document_hash(text, metadata)
         metadata['doc_hash'] = doc_hash
         
-        # 檢查文檔是否已存在且未更改
+        # 檢查文本是否已存在且未更改
         existing_docs = self.collection.get(
             where={"doc_hash": doc_hash}
         )
@@ -77,7 +77,7 @@ class RAGSystem:
         except:
             pass  # 如果沒有找到舊版本，繼續處理
         
-        # 處理新文檔
+        # 處理新文本
         chunks = self.text_splitter.split_text(text)
         if not chunks:
             return
@@ -107,7 +107,7 @@ class RAGSystem:
         )
         
         if not results['documents'][0]:
-            return "抱歉，我在文檔中找不到相關的資訊。"
+            return "抱歉，我在文本中找不到相關的資訊。"
         
         # Create prompt with context
         context = "\n".join(results['documents'][0])

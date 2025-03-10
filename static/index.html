@@ -41,7 +41,7 @@
             <div class="hidden w-full md:block md:w-auto" id="navbar-main">
                 <div class="flex flex-col md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-transparent dark:bg-gray-800 md:dark:bg-transparent dark:border-gray-700">
                     <a href="/" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">首頁</a>
-                    <a href="/upload.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">上傳文檔</a>
+                    <a href="/upload.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">上傳文本</a>
                     <a href="/text-input.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">直接輸入</a>
                     <a href="/convert.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">轉文字檔</a>
                     <a href="/help.html" class="nav-link block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">使用說明</a>
@@ -52,20 +52,23 @@
 
     <!-- 主要內容 -->
     <div class="container mx-auto px-4 pt-8">
-        <h1 class="text-4xl font-bold mb-8 text-center text-gray-800 dark:text-white">RAG 文檔問答系統</h1>
+        <h1 class="text-4xl font-bold mb-8 text-center text-gray-800 dark:text-white">RAG 文本問答系統</h1>
         
         <!-- 問答區塊 -->
         <section class="section-card bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 mb-1">
             <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">提問</h2>
             <form id="queryForm" class="space-y-4">
                 <div>
-                    <label for="question" class="block text-sm font-medium text-gray-700 dark:text-gray-300">問題</label>
+                    <label for="question" class="block text-sm font-medium text-gray-700 dark:text-gray-300">請簡述想知道的資訊。<br>相關背景知識庫可由下面文本列表查看。<br>亦可新增知識庫，提供檔案上傳與文字輸入。</label>
                     <textarea id="question" rows="3" 
                         class="mt-1 block w-full rounded-md border-gray-500 dark:border-gray-50 border shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white"></textarea>
                 </div>
 
                 <div>
                     <label for="similarity" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        當檢索結果不夠滿意時，亦可調整相似度閾值，數值越小代表寬容度越高，越容易找到文件，但可能會犧牲精確性。<br>
+                        <!-- 新增分隔線 -->
+                        <hr class="my-2">
                         相似度閾值: <span id="similarityValue">0.7</span>
                     </label>
                     <input type="range" id="similarity" name="similarity" 
@@ -87,25 +90,25 @@
                 <h3 class="font-semibold text-lg mb-2 text-gray-800 dark:text-white">回答：</h3>
                 <div id="answerText" class="markdown-body dark:prose-dark"></div>
                 <div id="sources" class="mt-4 text-sm text-gray-600 dark:text-gray-300">
-                    <h4 class="font-semibold mb-2">來源文檔：</h4>
+                    <h4 class="font-semibold mb-2">來源文本：</h4>
                     <ul id="sourcesList" class="list-disc pl-5 space-y-1"></ul>
                 </div>
             </div>
         </section>
 
-        <!-- 文檔列表區塊 -->
+        <!-- 文本列表區塊 -->
         <section class="section-card bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 mb-1">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">文檔列表</h2>
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">文本列表</h2>
             <div id="documents"></div>
         </section>
 
         <!-- 上傳區塊 -->
         <section class="section-card bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 mb-1">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">上傳新文檔</h2>
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">更新知識庫：上傳新文本</h2>
             <form id="uploadForm">
                 <div id="dropZone" class="drop-zone bg-gray-50 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 p-4">
                     <p class="text-base text-gray-600 dark:text-gray-300 mb-2">拖拽文件到此處或點擊上傳</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">支持 .txt、.md 等純文字格式</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">相容 .txt、.md 等純文字格式</p>
                     <input type="file" id="fileInput" class="hidden" accept=".txt,.md">
                     <button type="button" id="selectFileBtn" 
                         class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
@@ -117,16 +120,16 @@
 
         <!-- 文本輸入區塊 -->
         <section class="section-card bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">直接輸入文檔</h2>
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">更新知識庫：文本輸入</h2>
             <form id="textInputForm" class="space-y-4">
                 <div>
-                    <label for="docTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300">文檔標題</label>
+                    <label for="docTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300">文本標題</label>
                     <input type="text" id="docTitle" 
                         class="mt-1 block w-full rounded-md border-gray-500 dark:border-gray-50 border shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white"
-                        placeholder="輸入文檔標題（不含副檔名）">
+                        placeholder="輸入文本標題（不含副檔名）">
                 </div>
                 <div>
-                    <label for="docContent" class="block text-sm font-medium text-gray-700 dark:text-gray-300">文檔內容 (支持 Markdown 格式)</label>
+                    <label for="docContent" class="block text-sm font-medium text-gray-700 dark:text-gray-300">文本內容 (可直接貼上文字，且相容 Markdown 格式。)</label>
                     <textarea id="docContent" rows="10" 
                         class="mt-1 block w-full rounded-md border-gray-500 dark:border-gray-50 border shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white font-mono"
                         placeholder="# 標題&#10;## 子標題&#10;- 列表項目&#10;1. 有序列表&#10;```&#10;代碼塊&#10;```"></textarea>
@@ -138,7 +141,7 @@
                     </button>
                     <button type="submit" id="saveContentBtn" 
                         class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                        保存為文檔
+                        保存為文本
                     </button>
                 </div>
             </form>
@@ -183,7 +186,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-4 text-gray-700 dark:text-gray-300">請輸入管理員密碼以刪除文檔：</p>
+                    <p class="mb-4 text-gray-700 dark:text-gray-300">請輸入管理員密碼以刪除文本：</p>
                     <input type="password" id="adminPassword" 
                         class="w-full p-2 border rounded mb-4 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600" 
                         placeholder="管理員密碼">
@@ -195,6 +198,39 @@
                         <button type="button" onclick="confirmDelete()" 
                             class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
                             確認刪除
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 上傳確認 Modal -->
+    <div id="uploadModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-container">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title text-xl font-semibold text-gray-900 dark:text-white">確認上傳</h3>
+                    <button type="button" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-2"
+                            onclick="closeUploadModal()">
+                        <span class="sr-only">關閉</span>
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-4 text-gray-700 dark:text-gray-300">請輸入管理員密碼以上傳文本：</p>
+                    <input type="password" id="uploadPassword" 
+                        class="w-full p-2 border rounded mb-4 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600" 
+                        placeholder="管理員密碼">
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" class="cancel-btn px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            取消
+                        </button>
+                        <button type="button" class="confirm-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                            確認上傳
                         </button>
                     </div>
                 </div>

@@ -52,7 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
         docTitleInput: document.getElementById('docTitle'),
         docContentInput: document.getElementById('docContent'),
         previewContentBtn: document.getElementById('previewContentBtn'),
-        saveContentBtn: document.getElementById('saveContentBtn')
+        saveContentBtn: document.getElementById('saveContentBtn'),
+        uploadModal: document.getElementById('uploadModal'),
+        uploadPassword: document.getElementById('uploadPassword')
     };
 
     // 狀態管理
@@ -204,14 +206,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return await response.json();
             } catch (error) {
-                console.error('獲取文檔列表失敗:', error);
+                console.error('獲取文本列表失敗:', error);
                 throw error;
             }
         },
 
         async getDocumentContent(filename) {
             try {
-                console.log('獲取文檔內容:', filename);
+                console.log('獲取文本內容:', filename);
                 // 嘗試使用正確的 API 路徑
                 const response = await fetch(`/documents/${encodeURIComponent(filename)}/content`);
                 if (!response.ok) {
@@ -219,14 +221,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return await response.text();
             } catch (error) {
-                console.error('獲取文檔內容失敗:', error);
+                console.error('獲取文本內容失敗:', error);
                 throw error;
             }
         },
 
         async deleteDocument(filename, password) {
             try {
-                console.log('刪除文檔:', filename, '密碼:', password);
+                console.log('刪除文本:', filename, '密碼:', password);
                 
                 // 使用 FormData 而不是 JSON
                 const formData = new FormData();
@@ -241,38 +243,90 @@ document.addEventListener('DOMContentLoaded', () => {
                     const contentType = response.headers.get('content-type');
                     if (contentType && contentType.includes('application/json')) {
                         const errorJson = await response.json();
-                        console.error('刪除文檔失敗，伺服器回應 JSON:', errorJson);
+                        console.error('刪除文本失敗，伺服器回應 JSON:', errorJson);
                         throw new Error(JSON.stringify(errorJson));
                     } else {
                         const errorText = await response.text();
-                        console.error('刪除文檔失敗，伺服器回應文本:', errorText);
+                        console.error('刪除文本失敗，伺服器回應文本:', errorText);
                         throw new Error(errorText);
                     }
                 }
                 
                 return true;
             } catch (error) {
-                console.error('刪除文檔失敗:', error);
+                console.error('刪除文本失敗:', error);
                 throw error;
             }
         },
 
         async uploadDocument(file) {
-            try {
-                const formData = new FormData();
-                formData.append('file', file);
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-                return true;
-            } catch (error) {
-                console.error('上傳文檔失敗:', error);
-                throw error;
-            }
+            return new Promise((resolve, reject) => {
+                showUploadModal();
+                
+                const confirmBtn = elements.uploadModal.querySelector('.confirm-btn');
+                const cancelBtn = elements.uploadModal.querySelector('.cancel-btn');
+                
+                const cleanup = () => {
+                    confirmBtn.onclick = null;
+                    cancelBtn.onclick = null;
+                    closeUploadModal();
+                };
+                
+                const handleCancel = () => {
+                    cleanup();
+                    reject(new Error('上傳已取消'));
+                };
+                
+                const handleConfirm = async () => {
+                    const password = elements.uploadPassword.value;
+                    if (!password) {
+                        showToast('請輸入密碼', 'error');
+                        return;
+                    }
+                    
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('password', password);
+                    
+                    try {
+                        const response = await fetch('/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!response.ok) {
+                            const error = await response.text();
+                            throw new Error(error);
+                        }
+                        
+                        cleanup();
+                        resolve(await response.json());
+                    } catch (error) {
+                        cleanup();
+                        reject(error);
+                    }
+                };
+                
+                // 綁定事件
+                confirmBtn.onclick = handleConfirm;
+                cancelBtn.onclick = handleCancel;
+                
+                // ESC 鍵關閉
+                const handleEsc = (e) => {
+                    if (e.key === 'Escape') {
+                        handleCancel();
+                    }
+                };
+                document.addEventListener('keydown', handleEsc);
+                
+                // Enter 鍵確認
+                elements.uploadPassword.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleConfirm();
+                    }
+                };
+            });
         }
     };
 
@@ -303,11 +357,11 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         refreshDocumentList(documents) {
-            console.log('刷新文檔列表:', documents);
+            console.log('刷新文本列表:', documents);
             if (!elements.documents) return;
             
             if (!documents || documents.length === 0) {
-                elements.documents.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-4">暫無文檔</p>';
+                elements.documents.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-4">暫無文本</p>';
                 return;
             }
             
@@ -430,10 +484,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 修改 handlePreview 函數，添加強制刷新樣式
     async function handlePreview(filename) {
-        console.log('預覽文檔:', filename);
+        console.log('預覽文本:', filename);
         try {
             const content = await api.getDocumentContent(filename);
-            console.log('獲取到的文檔內容:', content);
+            console.log('獲取到的文本內容:', content);
             
             // 打開預覽模態框
             const previewModal = document.getElementById('previewModal');
@@ -529,13 +583,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('顯示預覽模態框');
         } catch (error) {
-            console.error('預覽文檔失敗:', error);
-            showToast('預覽文檔失敗: ' + error.message, 'error');
+            console.error('預覽文本失敗:', error);
+            showToast('預覽文本失敗: ' + error.message, 'error');
         }
     }
 
     function handleDelete(filename) {
-        console.log('準備刪除文檔:', filename);
+        console.log('準備刪除文本:', filename);
         // 打開刪除確認模態框
         const deleteModal = document.getElementById('deleteModal');
         
@@ -579,21 +633,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         try {
-            console.log('確認刪除文檔:', filename, '使用密碼:', password);
+            console.log('確認刪除文本:', filename, '使用密碼:', password);
             
             // 顯示刪除中提示
-            showToast('正在刪除文檔...', 'info');
+            showToast('正在刪除文本...', 'info');
             
             await api.deleteDocument(filename, password);
             closeDeleteModal();
-            showToast('文檔刪除成功', 'success');
+            showToast('文本刪除成功', 'success');
             
-            // 刷新文檔列表
+            // 刷新文本列表
             const documents = await api.getDocuments();
             ui.refreshDocumentList(documents);
         } catch (error) {
-            console.error('刪除文檔失敗:', error);
-            let errorMsg = '刪除文檔失敗';
+            console.error('刪除文本失敗:', error);
+            let errorMsg = '刪除文本失敗';
             
             // 嘗試解析錯誤信息
             try {
@@ -664,16 +718,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleFileUpload(file) {
         try {
-            showToast('正在上傳文檔...', 'info');
+            showToast('正在上傳文本...', 'info');
             await api.uploadDocument(file);
-            showToast('文檔上傳成功！', 'success');
+            showToast('文本上傳成功！', 'success');
             
-            // 刷新文檔列表
+            // 刷新文本列表
             const documents = await api.getDocuments();
             ui.refreshDocumentList(documents);
         } catch (error) {
-            console.error('上傳文檔失敗:', error);
-            showToast('上傳文檔失敗: ' + error.message, 'error');
+            console.error('上傳文本失敗:', error);
+            showToast('上傳文本失敗: ' + error.message, 'error');
         }
     }
 
@@ -708,12 +762,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const content = elements.docContentInput.value.trim();
             
             if (!content) {
-                showToast('請輸入文檔內容', 'error');
+                showToast('請輸入文本內容', 'error');
                 return;
             }
             
             // 使用現有的預覽模態框顯示內容
-            const previewTitle = title || '未命名文檔';
+            const previewTitle = title || '未命名文本';
             
             // 打開預覽模態框
             const previewModal = document.getElementById('previewModal');
@@ -795,56 +849,59 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('modal-open');
         });
 
-        // 表單提交事件 - 保存為文檔
-        elements.textInputForm.addEventListener('submit', function(e) {
+        // 表單提交事件 - 保存為文本
+        elements.textInputForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const title = elements.docTitleInput.value.trim();
             const content = elements.docContentInput.value.trim();
             
             if (!title) {
-                showToast('請輸入文檔標題', 'error');
+                showToast('請輸入文本標題', 'error');
                 return;
             }
             
             if (!content) {
-                showToast('請輸入文檔內容', 'error');
+                showToast('請輸入文本內容', 'error');
                 return;
             }
             
-            // 創建 Blob 對象
-            const blob = new Blob([content], { type: 'text/markdown' });
-            const fileName = `${title}.md`;
-            
-            // 創建 File 對象
-            const file = new File([blob], fileName, { type: 'text/markdown' });
-            
-            // 顯示上傳中提示
-            showToast('正在上傳文檔...', 'info');
-            
-            // 使用現有的 API 方法上傳文件
-            api.uploadDocument(file)
-                .then(() => {
-                    console.log('上傳成功');
+            try {
+                // 創建 Blob 對象
+                const blob = new Blob([content], { type: 'text/markdown' });
+                const fileName = `${title}.md`;
+                
+                // 創建 File 對象
+                const file = new File([blob], fileName, { type: 'text/markdown' });
+                
+                // 顯示上傳中提示
+                showToast('正在處理...', 'info');
+                
+                // 使用現有的 API 方法上傳文件
+                try {
+                    await api.uploadDocument(file);
+                    
                     // 顯示成功提示
-                    showToast('文檔上傳成功！', 'success');
+                    showToast('文本上傳成功！', 'success');
                     
                     // 清空表單
                     elements.docTitleInput.value = '';
                     elements.docContentInput.value = '';
                     
-                    // 刷新文檔列表
-                    return api.getDocuments();
-                })
-                .then(documents => {
+                    // 刷新文本列表
+                    const documents = await api.getDocuments();
                     ui.refreshDocumentList(documents);
-                })
-                .catch(error => {
-                    console.error('上傳錯誤:', error);
-                    
-                    // 顯示錯誤提示
-                    showToast('文檔上傳失敗: ' + error.message, 'error');
-                });
+                } catch (error) {
+                    if (error.message === '上傳已取消') {
+                        showToast('已取消上傳', 'info');
+                    } else {
+                        throw error;
+                    }
+                }
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                showToast('文本上傳失敗: ' + error.message, 'error');
+            }
         });
     }
 
@@ -953,14 +1010,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // 初始化事件監聽器
         initializeEventListeners();
         
-        // 獲取文檔列表
+        // 獲取文本列表
         try {
-            console.log('獲取文檔列表...');
+            console.log('獲取文本列表...');
             const documents = await api.getDocuments();
             ui.refreshDocumentList(documents);
         } catch (error) {
-            console.error('獲取文檔列表失敗:', error);
-            showToast('獲取文檔列表失敗: ' + error.message, 'error');
+            console.error('獲取文本列表失敗:', error);
+            showToast('獲取文本列表失敗: ' + error.message, 'error');
         }
         
         console.log('應用初始化完成');
@@ -975,4 +1032,21 @@ document.addEventListener('DOMContentLoaded', () => {
     window.handlePreview = handlePreview;
     window.handleDelete = handleDelete;
     window.confirmDelete = confirmDelete;
+    window.closeUploadModal = closeUploadModal;
+    window.showUploadModal = showUploadModal;
+
+    function showUploadModal() {
+        elements.uploadModal.classList.remove('hidden');
+        elements.uploadModal.classList.add('active');
+        document.body.classList.add('modal-open');
+        elements.uploadPassword.value = '';
+        elements.uploadPassword.focus();
+    }
+
+    function closeUploadModal() {
+        elements.uploadModal.classList.remove('active');
+        elements.uploadModal.classList.add('hidden');
+        document.body.classList.remove('modal-open');
+        elements.uploadPassword.value = '';
+    }
 }); 

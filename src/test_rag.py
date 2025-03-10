@@ -14,14 +14,14 @@ def test_rag():
     # 初始化系統
     rag = ImprovedRAGSystem()
     
-    # 讀取docs目錄下的所有文檔
+    # 讀取docs目錄下的所有文本
     docs_dir = "docs"
     documents = load_documents(docs_dir)
     
-    # 添加所有文檔到系統
+    # 添加所有文本到系統
     for filename, content in documents:
         rag.add_document(content, {"source": filename, "type": "document"})
-        print(f"已添加文檔: {filename}")
+        print(f"已添加文本: {filename}")
     
     # 測試查詢
     questions = [

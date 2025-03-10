@@ -1,33 +1,33 @@
 gemini:
   api_key: "your-api-key-here"  # 請替換為您的 Gemini API 金鑰
 
-chroma_host: "localhost"  # ChromaDB 主機地址
-chroma_port: 8000        # ChromaDB 端口
+chroma_host: "localhost"  # ChromaDB 主機位址
+chroma_port: 8000        # ChromaDB 連接埠
 
-collection_name: "documents"  # 文檔集合名稱
+collection_name: "documents"  # 文件集合名稱
 
-# 文本分割設置
-chunk_size: 2000      # 文本塊大小
+# 文字分割設定
+chunk_size: 2000      # 文字區塊大小
 chunk_overlap: 400    # 重疊部分大小
 
-# 嵌入模型設置
+# 嵌入模型設定
 embedding_model: "shibing624/text2vec-base-chinese"  # 使用的嵌入模型
 
-# 服務器設置
+# 伺服器設定
 server:
-  host: "0.0.0.0"    # 服務器監聽地址
-  port: 8000         # 服務器端口
-  admin_password: "your_admin_password"  # 管理員密碼，用於刪除文檔
+  host: "0.0.0.0"    # 伺服器監聽位址
+  port: 8000         # 伺服器連接埠
+  admin_password: "your_admin_password"  # 管理員密碼，用於刪除文件
   similarity_settings:
-    default_threshold: 0.7  # 默認相似度閾值（0-1）
+    default_threshold: 0.7  # 預設相似度閾值（0-1）
     min_threshold: 0.5     # 最小相似度閾值
     max_threshold: 0.95    # 最大相似度閾值
     step: 0.05            # 調整步長
 
-# 文件上傳設置
+# 檔案上傳設定
 upload:
-  max_file_size: 10485760  # 最大文件大小（bytes），預設 10MB
-  allowed_extensions:      # 允許的文件類型
+  max_file_size: 10485760  # 最大檔案大小（bytes），預設 10MB
+  allowed_extensions:      # 允許的檔案類型
     - .txt
     - .md
     - .doc
