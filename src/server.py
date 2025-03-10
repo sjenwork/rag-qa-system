@@ -1,7 +1,7 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 import os
 import yaml
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -19,9 +19,9 @@ import shutil
 import time
 import asyncio
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
 from starlette.responses import Response
 import logging
+from datetime import datetime
 
 # 配置日誌
 logging.basicConfig(level=logging.INFO)
@@ -67,7 +67,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*", "X-Device-ID", "X-User-Name"],  # 明確允許自定義請求頭
 )
 
 # 初始化 RAG 系統
@@ -91,6 +91,12 @@ class DeleteRequest(BaseModel):
     filename: str
     password: str
 
+class UserAction(BaseModel):
+    device_id: str
+    user_name: Optional[str] = None
+    action: str
+    details: Optional[Dict] = None
+
 # 身份驗證
 def verify_password(password: str = Form(...)) -> bool:
     """驗證管理員密碼"""
@@ -111,83 +117,131 @@ async def list_documents():
             documents.append(filename)
     return documents
 
+# 用戶訪問記錄
+async def log_user_activity(request: Request, action: str, details: Optional[Dict] = None):
+    """記錄用戶活動"""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    client_host = request.client.host
+    user_agent = request.headers.get("user-agent", "unknown")
+    
+    log_entry = {
+        "timestamp": timestamp,
+        "ip": client_host,
+        "user_agent": user_agent,
+        "action": action,
+        "details": details or {}
+    }
+    
+    # 寫入日誌文件
+    log_file = f"logs/user_activity_{datetime.now().strftime('%Y-%m-%d')}.log"
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
 @app.post("/query", response_model=Answer)
-async def query(question: Question, background_tasks: BackgroundTasks):
+async def query(request: Request, question: Question, background_tasks: BackgroundTasks):
     """查詢文件"""
     try:
-        # 使用使用者提供的閾值或預設值
+        # 記錄查詢活動
+        await log_user_activity(request, "query", {
+            "question": question.text,
+            "similarity_threshold": question.similarity_threshold
+        })
+        
+        # 原有的查詢邏輯
         threshold = question.similarity_threshold
         if threshold is not None:
-            # 確保閾值在有效範圍內
             min_threshold = config["server"]["similarity_settings"]["min_threshold"]
             max_threshold = config["server"]["similarity_settings"]["max_threshold"]
             threshold = max(min_threshold, min(max_threshold, threshold))
         
-        # 使用背景任務處理查詢
         result = await asyncio.wait_for(
             asyncio.to_thread(rag_system.query, question.text, threshold),
-            timeout=30.0  # 設置 30 秒超時
+            timeout=30.0
         )
         
         return Answer(
             answer=result["answer"], 
             sources=result["sources"],
-            enhanced_prompt=result.get("enhanced_prompt", "未提供強化後的提示詞")  # 添加強化後的提示詞
+            enhanced_prompt=result.get("enhanced_prompt", "未提供強化後的提示詞")
         )
-    except asyncio.TimeoutError:
-        logger.error(f"Query timeout for question: {question.text}")
-        raise HTTPException(status_code=504, detail="查詢處理超時，請稍後重試")
     except Exception as e:
-        logger.error(f"Query error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # 記錄錯誤
+        await log_user_activity(request, "query_error", {
+            "error": str(e),
+            "question": question.text
+        })
+        raise
 
 @app.post("/upload")
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
     password: str = Form(...)
 ):
     """上傳新文件（需要管理員密碼）"""
-    # 驗證密碼
-    verify_password(password)
-    
-    # 檢查檔案大小
-    file_size = 0
-    content = b""
-    while chunk := await file.read(8192):
-        content += chunk
-        file_size += len(chunk)
-        if file_size > config["upload"]["max_file_size"]:
-            raise HTTPException(status_code=413, detail="檔案太大")
-    
-    # 檢查檔案類型
-    if not any(file.filename.endswith(ext) for ext in config["upload"]["allowed_extensions"]):
-        raise HTTPException(status_code=400, detail="不支援的檔案類型")
-    
-    # 儲存檔案
-    file_path = os.path.join("docs", file.filename)
-    with open(file_path, "wb") as f:
-        f.write(content)
-    
-    # 新增到 RAG 系統
-    with open(file_path, "r", encoding="utf-8") as f:
-        text = f.read()
-        rag_system.add_document(text, {"source": file.filename})
-    
-    return JSONResponse(content={"message": "檔案上傳成功"})
+    try:
+        # 記錄上傳活動
+        await log_user_activity(request, "upload", {
+            "filename": file.filename
+        })
+        
+        # 原有的上傳邏輯
+        verify_password(password)
+        
+        # 檢查檔案大小
+        file_size = 0
+        content = b""
+        while chunk := await file.read(8192):
+            content += chunk
+            file_size += len(chunk)
+            if file_size > config["upload"]["max_file_size"]:
+                raise HTTPException(status_code=413, detail="檔案太大")
+        
+        # 檢查檔案類型
+        if not any(file.filename.endswith(ext) for ext in config["upload"]["allowed_extensions"]):
+            raise HTTPException(status_code=400, detail="不支援的檔案類型")
+        
+        # 儲存檔案
+        file_path = os.path.join("docs", file.filename)
+        with open(file_path, "wb") as f:
+            f.write(content)
+        
+        # 新增到 RAG 系統
+        with open(file_path, "r", encoding="utf-8") as f:
+            text = f.read()
+            rag_system.add_document(text, {"source": file.filename})
+        
+        return JSONResponse(content={"message": "檔案上傳成功"})
+    except Exception as e:
+        await log_user_activity(request, "upload_error", {
+            "filename": file.filename,
+            "error": str(e)
+        })
+        raise
 
 @app.delete("/documents/{filename}")
-async def delete_document(filename: str, password: str = Depends(verify_password)):
+async def delete_document(request: Request, filename: str, password: str = Depends(verify_password)):
     """刪除文件（需要管理員密碼）"""
-    file_path = os.path.join("docs", filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="檔案不存在")
-    
     try:
+        # 記錄刪除活動
+        await log_user_activity(request, "delete", {
+            "filename": filename
+        })
+        
+        # 原有的刪除邏輯
+        file_path = os.path.join("docs", filename)
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="檔案不存在")
+        
         os.remove(file_path)
         # TODO: 從 RAG 系統中移除文件
         return JSONResponse(content={"message": "檔案刪除成功"})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        await log_user_activity(request, "delete_error", {
+            "filename": filename,
+            "error": str(e)
+        })
+        raise
 
 @app.get("/documents/{filename}/content")
 async def get_document_content(filename: str):
@@ -212,32 +266,47 @@ def process_image(model, image):
     
     # 建立表格擷取的提示詞
     prompt = """
-    分析提供的表格圖片並轉換為 JSON 格式。使用表格的標題列作為鍵值來建立資料結構。如果不同欄位之間有對應的項目（如「(一)」、「(二)」等），請在 JSON 結構中將它們分開為獨立的項目，並保留其編號。只回傳 JSON 資料，不要包含其他文字。
+    請分析提供的表格圖片並轉換為 JSON 格式。
+    1. 使用表格的標題列作為鍵值來建立資料結構
+    2. 如果不同欄位之間有對應的項目（如「(一)」、「(二)」等），請在 JSON 結構中將它們分開為獨立的項目
+    3. 請使用正體中文（繁體中文）輸出
+    4. 只回傳純 JSON 資料，不要包含其他說明文字或 markdown 標記
     """
-    # 產生 Gemini 回應
-    response = model.generate_content([prompt, img])
     
-    # 解析 JSON 回應
     try:
-        # 嘗試直接解析回應文字為 JSON
-        json_data = json.loads(response.text)
-        return json_data
-    except json.JSONDecodeError:
-        # 如果直接解析失敗，嘗試清理並擷取 JSON 內容
-        print("警告：無法直接解析 JSON。嘗試清理回應內容。")
-        # 移除任何 markdown 格式
-        clean_text = response.text.strip('`').strip()
-        if (clean_text.startswith('json')):
-            clean_text = clean_text[4:]
+        # 產生 Gemini 回應
+        response = model.generate_content([prompt, img])
+        
+        # 清理回應文字
+        clean_text = response.text.strip()
+        
+        # 移除可能的程式碼區塊標記
+        if clean_text.startswith('```json'):
+            clean_text = clean_text[7:]
+        elif clean_text.startswith('```'):
+            clean_text = clean_text[3:]
+        if clean_text.endswith('```'):
+            clean_text = clean_text[:-3]
+            
+        clean_text = clean_text.strip()
+        
+        # 嘗試解析 JSON
         try:
-            # 尋找 JSON 陣列的起始和結束位置
-            start_idx = clean_text.find('[')
-            end_idx = clean_text.rfind(']') + 1
-            json_content = clean_text[start_idx:end_idx]
-            json_data = json.loads(json_content)
+            json_data = json.loads(clean_text)
             return json_data
         except json.JSONDecodeError as e:
-            raise Exception(f"無法解析回應為 JSON：{e}\n回應內容：{response.text}")
+            logger.error(f"JSON 解析錯誤：{str(e)}\n原始內容：{clean_text}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"無法解析 AI 回應為 JSON 格式：{str(e)}"
+            )
+            
+    except Exception as e:
+        logger.error(f"處理圖片時發生錯誤：{str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"處理圖片時發生錯誤：{str(e)}"
+        )
 
 def process_pdf(model, pdf_path):
     """
@@ -294,44 +363,71 @@ def process_pdf(model, pdf_path):
 
 async def save_table_formats(data, base_name, output_dir):
     """將表格資料儲存為多種格式並回傳 URLs"""
-    # 使用時間戳記作為檔名前綴，避免衝突
-    timestamp = int(time.time())
     
     # 儲存 JSON 結果
-    json_filename = f"{timestamp}_{base_name}.json"
+    json_filename = f"{base_name}.json"
     json_output_path = output_dir / json_filename
     with json_output_path.open("w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     
     # 儲存 CSV 結果
-    csv_filename = f"{timestamp}_{base_name}.csv"
+    csv_filename = f"{base_name}.csv"
     csv_output_path = output_dir / csv_filename
     df = pd.DataFrame(data)
     df.to_csv(csv_output_path, index=False)
     
     # 儲存 Excel 結果
-    excel_filename = f"{timestamp}_{base_name}.xlsx"
+    excel_filename = f"{base_name}.xlsx"
     excel_output_path = output_dir / excel_filename
     df.to_excel(excel_output_path, index=False)
     
-    # 回傳相對於伺服器的路徑
+    # 儲存純文字結果
+    text_filename = f"{base_name}.txt"
+    text_output_path = output_dir / text_filename
+    
+    # 將 JSON 資料轉換為易讀的文字格式
+    text_content = []
+    if isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict):
+                for key, value in item.items():
+                    text_content.append(f"{key}: {value}")
+            else:
+                text_content.append(str(item))
+            text_content.append("-" * 40)  # 分隔線
+    elif isinstance(data, dict):
+        for key, value in data.items():
+            text_content.append(f"{key}: {value}")
+    
+    # 寫入文字檔
+    with text_output_path.open("w", encoding="utf-8") as f:
+        f.write("\n".join(text_content))
+    
+    # 回傳相對於伺服器的路徑和純文字內容
     return {
         "name": base_name,
         "json": f"/ai/output/{json_filename}",
         "csv": f"/ai/output/{csv_filename}",
-        "excel": f"/ai/output/{excel_filename}"
+        "excel": f"/ai/output/{excel_filename}",
+        "text": f"/ai/output/{text_filename}",
+        "text_content": "\n".join(text_content)  # 添加純文字內容
     }
 
 @app.post("/convert")
-async def convert_file(file: UploadFile = File(...)):
+async def convert_file(request: Request, file: UploadFile = File(...)):
     """處理上傳的圖片或 PDF 檔案並轉換為表格資料"""
-    # 儲存上傳的檔案
-    upload_dir = Path("uploads")
-    upload_dir.mkdir(exist_ok=True)
-    file_path = upload_dir / file.filename
-    
     try:
+        # 記錄轉換活動
+        await log_user_activity(request, "convert", {
+            "filename": file.filename
+        })
+        
+        # 原有的轉換邏輯
         # 儲存上傳的檔案
+        upload_dir = Path("uploads")
+        upload_dir.mkdir(exist_ok=True)
+        file_path = upload_dir / file.filename
+        
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
@@ -386,6 +482,10 @@ async def convert_file(file: UploadFile = File(...)):
             # 回傳單頁結果
             return JSONResponse(content={"tables": [table_output]})
     except Exception as e:
+        await log_user_activity(request, "convert_error", {
+            "filename": file.filename,
+            "error": str(e)
+        })
         print(f"處理檔案時發生錯誤：{str(e)}")
         print(traceback.format_exc())
         return JSONResponse(
@@ -404,6 +504,82 @@ app.mount("/docs", StaticFiles(directory="docs"), name="docs")
 
 # 掛載根路徑的 HTML 檔案
 app.mount("/", StaticFiles(directory="static", html=True), name="html")
+
+
+# 健康檢查端點
+@app.get("/health")
+async def health_check():
+    """健康檢查端點"""
+    try:
+        # 檢查 RAG 系統是否正常
+        rag_system.collection.get()
+        return {"status": "healthy", "timestamp": time.time()}
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        raise HTTPException(status_code=503, detail="系統異常")
+
+@app.get("/visit")
+async def visit():
+    return JSONResponse(content={"status": "success"})
+    
+@app.post("/log_visit")
+async def log_visit(request: Request):
+    """記錄使用者訪問"""
+    try:
+        # 從請求頭或請求體中獲取資訊
+        device_id = request.headers.get("X-Device-ID", "unknown")
+        user_name = request.headers.get("X-User-Name", "anonymous")
+        
+        # 記錄訪問資訊
+        logger.info(f"收到訪問請求: device_id={device_id}, user_name={user_name}")
+        
+        # 記錄用戶活動
+        await log_user_activity(request, "visit", {
+            "device_id": device_id,
+            "user_name": user_name,
+            "path": str(request.url.path),
+            "method": request.method,
+            "headers": dict(request.headers)
+        })
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "success",
+                "message": "訪問記錄已保存",
+                "device_id": device_id,
+                "user_name": user_name
+            }
+        )
+    except Exception as e:
+        logger.error(f"記錄訪問失敗：{str(e)}")
+        logger.error(f"錯誤詳情：{traceback.format_exc()}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "error": "記錄訪問失敗",
+                "detail": str(e)
+            }
+        )
+
+@app.post("/log_action")
+async def log_action(action: UserAction, request: Request):
+    """記錄使用者行為"""
+    try:
+        await log_user_activity(request, action.action, {
+            "device_id": action.device_id,
+            "user_name": action.user_name,
+            "details": action.details
+        })
+        
+        return JSONResponse(content={"status": "success"})
+    except Exception as e:
+        logger.error(f"記錄行為失敗：{str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "記錄行為失敗"}
+        )
 
 @app.on_event("startup")
 async def startup_event():
@@ -448,17 +624,6 @@ async def startup_event():
             except Exception as e:
                 print(f"載入文件 {filename} 時發生錯誤：{str(e)}")
 
-# 健康檢查端點
-@app.get("/health")
-async def health_check():
-    """健康檢查端點"""
-    try:
-        # 檢查 RAG 系統是否正常
-        rag_system.collection.get()
-        return {"status": "healthy", "timestamp": time.time()}
-    except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
-        raise HTTPException(status_code=503, detail="系統異常")
 
 if __name__ == "__main__":
     # 啟動伺服器

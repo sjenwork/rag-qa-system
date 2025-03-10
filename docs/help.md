@@ -8,9 +8,13 @@
 
 ## 使用須知
 - <div style="color: red;">因採用較小的模型進行embeddings，所以檢索速度較快，但精確性較低。欲提升精準度必須使用較大的模型進行embeddings。</div>
+- <div style="color: red;">經測試，因為使用的 Embeddings 模型較小，對語意的檢索能力也不足，因此文本清單越多的狀況下，檢索結果越差。</div>
 - <div style="color: red;">因為是使用免費的Gemini API，所以有使用上的限制，請見[Gemini API 使用限制](https://ai.google.dev/gemini-api/docs/rate-limits)。</div>
 
 ## 架構說明
+
+![系統架構圖](http://aprilsun.mynetgear.com/ai/static/images/Architecture.png)
+
 - 使用簡易的向量資料庫：ChromaDB
 - 語句嵌入(Sentence Embedding)模型：shibing624/text2vec-base-chinese
    - 特色：輕量級，適合處理中文文本。

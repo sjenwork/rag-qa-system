@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.4.1/dist/typography.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/ai/static/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
     <script>
         // 初始化深色模式
@@ -24,6 +25,62 @@
         // 當頁面載入時初始化主題
         initTheme();
     </script>
+    <style>
+        /* 覆蓋 typography 的連結樣式 */
+        .prose a {
+            text-decoration: none !important;
+            font-weight: normal !important;
+        }
+        
+        /* 深色模式下的連結樣式 */
+        .dark .prose a {
+            color: #60A5FA !important; /* blue-400 */
+        }
+        
+        .dark .prose a:hover {
+            color: #93C5FD !important; /* blue-300 */
+        }
+        
+        /* 淺色模式下的連結樣式 */
+        .prose a {
+            color: #2563EB !important; /* blue-600 */
+        }
+        
+        .prose a:hover {
+            color: #1D4ED8 !important; /* blue-800 */
+        }
+
+        /* 深色模式下的文字顏色 */
+        .dark .prose {
+            color: #E5E7EB !important; /* gray-200 */
+        }
+        
+        .dark .prose h1,
+        .dark .prose h2,
+        .dark .prose h3,
+        .dark .prose h4 {
+            color: #F3F4F6 !important; /* gray-100 */
+        }
+        
+        .dark .prose strong {
+            color: #F9FAFB !important; /* gray-50 */
+        }
+        
+        .dark .prose ul,
+        .dark .prose ol {
+            color: #E5E7EB !important; /* gray-200 */
+        }
+
+        .dark .prose pre {
+            background-color: #374151 !important; /* gray-700 */
+            color: #E5E7EB !important; /* gray-200 */
+        }
+
+        .dark .prose code {
+            color: #E5E7EB !important; /* gray-200 */
+            background-color: #374151 !important; /* gray-700 */
+        }
+    </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
     <!-- 主要內容 -->
@@ -41,7 +98,7 @@
                             <li>相關背景知識庫可由下面文本列表查看</li>
                             <li>亦可新增知識庫，提供檔案上傳與文字輸入</li>
                             <li>問題範例：結案後要做什麼事情？</li>
-                            <li>RAG 使用與架構說明，請參考<a href="help.html" target="_blank" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">說明文件</a></li>
+                            <li>RAG 使用與架構說明，請參考<a href="/ai/help.html" target="_blank" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">說明文件</a></li>
                         </ul>
                     </label>
                     <textarea id="question" rows="3" 
@@ -210,6 +267,30 @@
                         </button>
                         <button type="button" class="confirm-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                             確認上傳
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 使用者名稱輸入 Modal -->
+    <div id="userNameModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-container">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white">歡迎使用</h3>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-4 text-gray-700 dark:text-gray-300">為了提供更好的服務，請告訴我們該如何稱呼您：</p>
+                    <input type="text" id="userName" 
+                        class="w-full p-2 border rounded mb-4 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600" 
+                        placeholder="請輸入您的稱呼">
+                    <div class="flex justify-end">
+                        <button type="button" id="confirmUserName" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                            確認
                         </button>
                     </div>
                 </div>

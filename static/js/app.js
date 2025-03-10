@@ -58,7 +58,11 @@ document.addEventListener('DOMContentLoaded', () => {
         previewModal: $('#previewModal'),
         previewTitle: $('#previewTitle'),
         previewContent: $('#previewContent'),
-        deleteModal: $('#deleteModal')
+        deleteModal: $('#deleteModal'),
+        loadingOverlay: $('#loadingOverlay'),  // 添加遮罩層元素
+        userNameModal: $('#userNameModal'),
+        userName: $('#userName'),
+        confirmUserName: $('#confirmUserName'),
     };
 
     // 狀態管理
@@ -292,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     formData.append('password', password);
                     
                     try {
-                        const response = await fetch('/upload', {
+                        const response = await fetch('/ai/upload', {
                             method: 'POST',
                             body: formData
                         });
@@ -333,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // UI 更新
+    // UI 控制
     const ui = {
         updateSimilarityValue() {
             if (elements.similarityValue) {
@@ -341,8 +345,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-        showAnswer(answer, sources, enhancedPrompt) {
-            console.log('顯示回答:', { answer, sources, enhancedPrompt });
+        showLoading() {
+            if (elements.loadingOverlay) {
+                elements.loadingOverlay.classList.remove('hidden');
+            }
+        },
+
+        hideLoading() {
+            if (elements.loadingOverlay) {
+                elements.loadingOverlay.classList.add('hidden');
+            }
+        },
+
+        showAnswer(answer, sources = [], enhancedPrompt = '') {
+            if (!elements.answerText || !elements.answer) {
+                console.error('找不到回答區域元素');
+                return;
+            }
+
             try {
                 // 來源標題
                 const sourcesTitleHtml = sources.length > 0 ? `
@@ -355,6 +375,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         <ul class="list-disc pl-5 text-sm text-gray-600 dark:text-gray-400">
                             ${sources.map(source => `<li>${source}</li>`).join('')}
                         </ul>
+                    </div>
+                ` : '';
+
+                // 強化後的提示詞標題
+                const promptTitleHtml = enhancedPrompt ? `
+                    <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">強化後的提示詞</h3>
+                ` : '';
+
+                // 強化後的提示詞內容
+                const promptContentHtml = enhancedPrompt ? `
+                    <div class="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <div class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">${enhancedPrompt}</div>
                     </div>
                 ` : '';
 
@@ -372,18 +404,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
 
-                // 強化後的提示詞標題
-                const promptTitleHtml = enhancedPrompt ? `
-                    <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">強化後的提示詞</h3>
-                ` : '';
-
-                // 強化後的提示詞內容
-                const promptContentHtml = enhancedPrompt ? `
-                    <div class="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                        <div class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">${enhancedPrompt}</div>
-                    </div>
-                ` : '';
-
                 // 組合所有內容
                 elements.answerText.innerHTML = `
                     ${sourcesTitleHtml}
@@ -398,66 +418,95 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('渲染回答失敗:', error);
                 // 如果渲染失敗，使用純文本顯示
                 elements.answerText.textContent = answer;
-                elements.sourcesList.innerHTML = sources
-                    .map(source => `<li>${source}</li>`)
-                    .join('');
+                if (elements.sourcesList) {
+                    elements.sourcesList.innerHTML = sources
+                        .map(source => `<li>${source}</li>`)
+                        .join('');
+                }
                 elements.answer.classList.remove('hidden');
             }
-        },
-
-        refreshDocumentList(documents) {
-            console.log('刷新文本列表:', documents);
-            if (!elements.documents) {
-                console.error('找不到文件列表容器元素');
-                return;
-            }
-            
-            if (!documents || documents.length === 0) {
-                elements.documents.innerHTML = `
-                    <div class="text-center py-8">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">尚無文件</h3>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">您可以透過上傳或直接輸入來新增文件</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            const docHTML = documents.map(doc => `
-                <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow mb-3">
-                    <div class="flex-1 min-w-0 pr-4">
-                        <h3 class="text-base font-medium text-gray-900 dark:text-white truncate">
-                            ${doc}
-                        </h3>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <button onclick="handlePreview('${doc}')" 
-                            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                            預覽
-                        </button>
-                        <button onclick="handleDelete('${doc}')"
-                            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 rounded-md hover:bg-red-200 dark:hover:bg-red-900 transition-colors">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            刪除
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-            
-            elements.documents.innerHTML = docHTML;
         },
 
         showError(message) {
             console.error('顯示錯誤:', message);
             showToast(message, 'error');
+        },
+
+        refreshDocumentList(documents) {
+            if (!elements.documents) {
+                console.error('找不到文檔列表元素');
+                return;
+            }
+
+            try {
+                // 清空現有列表
+                elements.documents.innerHTML = '';
+
+                if (!documents || documents.length === 0) {
+                    elements.documents.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-4">目前沒有任何文本</p>';
+                    return;
+                }
+
+                // 創建文檔列表
+                const ul = document.createElement('ul');
+                ul.className = 'space-y-2';
+
+                documents.forEach(doc => {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow';
+
+                    const docInfo = document.createElement('div');
+                    docInfo.className = 'flex-1';
+
+                    const docName = document.createElement('h3');
+                    docName.className = 'text-gray-900 dark:text-white font-medium';
+                    docName.textContent = doc;
+
+                    docInfo.appendChild(docName);
+
+                    const actions = document.createElement('div');
+                    actions.className = 'flex space-x-2';
+
+                    // 預覽按鈕
+                    const previewBtn = document.createElement('button');
+                    previewBtn.className = 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center space-x-1';
+                    previewBtn.innerHTML = '<i class="fas fa-eye"></i><span>檢視</span>';
+                    previewBtn.onclick = () => handlePreview(doc);
+                    previewBtn.title = '預覽';
+
+                    // 刪除按鈕
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 flex items-center space-x-1';
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i><span>刪除</span>';
+                    deleteBtn.onclick = () => handleDelete(doc);
+                    deleteBtn.title = '刪除';
+
+                    actions.appendChild(previewBtn);
+                    actions.appendChild(deleteBtn);
+
+                    li.appendChild(docInfo);
+                    li.appendChild(actions);
+                    ul.appendChild(li);
+                });
+
+                elements.documents.appendChild(ul);
+            } catch (error) {
+                console.error('更新文檔列表失敗:', error);
+                showToast('更新文檔列表失敗: ' + error.message, 'error');
+            }
+        },
+
+        showUserNameModal() {
+            if (elements.userNameModal) {
+                elements.userNameModal.classList.remove('hidden');
+                elements.userName.focus();
+            }
+        },
+        
+        hideUserNameModal() {
+            if (elements.userNameModal) {
+                elements.userNameModal.classList.add('hidden');
+            }
         }
     };
 
@@ -510,31 +559,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 事件處理
+    // 處理表單提交
     async function handleSubmit(event) {
         event.preventDefault();
-        console.log('提交問題表單');
-        
         const question = elements.question.value.trim();
         const similarity = parseFloat(elements.similarity.value);
-        
+        const deviceId = localStorage.getItem('deviceId');
+        const userName = localStorage.getItem('userName');
+
         if (!question) {
             ui.showError('請輸入問題');
             return;
         }
-        
+
         try {
-            console.log('發送查詢:', { question, similarity });
+            ui.showLoading();
             const result = await api.query(question, similarity);
+            ui.showAnswer(result.answer, result.sources, result.enhanced_prompt);
             
-            if (!result || !result.answer) {
-                throw new Error('未獲得有效的回答');
-            }
-            
-            ui.showAnswer(result.answer, result.sources || [], result.enhanced_prompt);
+            // 記錄查詢行為
+            fetch('/ai/log_action', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    device_id: deviceId,
+                    user_name: userName,
+                    action: 'query',
+                    details: { question, similarity }
+                })
+            }).catch(console.error);
         } catch (error) {
-            console.error('處理查詢失敗:', error);
-            ui.showError(error.message || '查詢失敗，請稍後重試');
+            console.error('查詢失敗:', error);
+            ui.showError('查詢失敗：' + (error.message || '請稍後重試'));
+        } finally {
+            ui.hideLoading();
         }
     }
 
@@ -1037,6 +1097,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 confirmDelete();
             }
         });
+
+        // 使用者名稱確認按鈕
+        elements.confirmUserName?.addEventListener('click', () => {
+            const name = elements.userName.value.trim();
+            if (name) {
+                localStorage.setItem('userName', name);
+                ui.hideUserNameModal();
+            } else {
+                showToast('請輸入您的稱呼', 'error');
+            }
+        });
+        
+        // 使用者名稱輸入框 Enter 鍵處理
+        elements.userName?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                elements.confirmUserName.click();
+            }
+        });
     }
 
     // 初始化頁面
@@ -1071,6 +1149,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // 初始化導航欄
             initializeNavbar();
             
+            // 檢查新使用者
+            checkNewUser();
+            
             console.log('頁面初始化完成');
         } catch (error) {
             console.error('初始化頁面失敗:', error);
@@ -1103,5 +1184,37 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.uploadModal.classList.add('hidden');
         document.body.classList.remove('modal-open');
         elements.uploadPassword.value = '';
+    }
+
+    // 檢查新使用者
+    function checkNewUser() {
+        const deviceId = localStorage.getItem('deviceId') || generateDeviceId();
+        const userName = localStorage.getItem('userName');
+        
+        if (!userName) {
+            ui.showUserNameModal();
+        }
+        
+        // 記錄訪問
+        fetch('/ai/log_visit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Device-ID': deviceId,
+                'X-User-Name': userName || 'anonymous'
+            },
+            body: JSON.stringify({})  // 添加空的请求体
+        }).catch(console.error);
+    }
+
+    // 生成裝置 ID
+    function generateDeviceId() {
+        const id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+        localStorage.setItem('deviceId', id);
+        return id;
     }
 }); 
