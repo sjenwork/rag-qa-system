@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData();
             formData.append('file', state.selectedFile);
 
-            const response = await fetch('/ai/convert', {
+            const response = await fetch('./convert', {
                 method: 'POST',
                 body: formData
             });

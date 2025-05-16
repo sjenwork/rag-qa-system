@@ -6,7 +6,7 @@
     <title>轉文字檔 - AI 文本問答系統</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.4.1/dist/typography.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/ai/css/styles.css">
+    <link rel="stylesheet" href="./css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
     <style>
         /* 覆蓋 typography 的連結樣式 */
@@ -62,7 +62,7 @@
     <div class="container mx-auto px-4 py-8">
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-4xl font-bold text-gray-800 dark:text-white">檔案轉換</h1>
-            <a href="/ai/help.html" target="_blank" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center">
+            <a href="./help.html" target="_blank" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
                 </svg>
@@ -102,8 +102,8 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="/ai/js/navbar.js"></script>
-    <script src="/ai/js/theme.js"></script>
+    <script src="./js/navbar.js"></script>
+    <script src="./js/theme.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const convertForm = document.getElementById('convertForm');
@@ -175,7 +175,7 @@
                 resultSection.classList.remove('hidden');
 
                 // 發送檔案到伺服器進行轉換
-                fetch('/ai/convert', {
+                fetch('./convert', {
                     method: 'POST',
                     body: formData
                 })

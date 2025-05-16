@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const api = {
         async query(question, similarity) {
             try {
-                const response = await fetch('/ai/query', {
+                const response = await fetch('./query', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async getDocuments() {
             try {
-                const response = await fetch('/ai/documents');
+                const response = await fetch('./documents');
                 if (!response.ok) {
                     throw new Error(await response.text());
                 }
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         async getDocumentContent(filename) {
             try {
                 console.log('獲取文本內容:', filename);
-                const response = await fetch(`/ai/documents/${encodeURIComponent(filename)}/content`);
+                const response = await fetch(`./documents/${encodeURIComponent(filename)}/content`);
                 if (!response.ok) {
                     throw new Error(await response.text());
                 }
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formData = new FormData();
                 formData.append('password', password);
                 
-                const response = await fetch(`/ai/documents/${filename}`, {
+                const response = await fetch(`./documents/${filename}`, {
                     method: 'DELETE',
                     body: formData
                 });
@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     formData.append('password', password);
                     
                     try {
-                        const response = await fetch('/ai/upload', {
+                        const response = await fetch('./upload', {
                             method: 'POST',
                             body: formData
                         });
@@ -578,7 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.showAnswer(result.answer, result.sources, result.enhanced_prompt);
             
             // 記錄查詢行為
-            fetch('/ai/log_action', {
+            fetch('./log_action', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1196,7 +1196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // 記錄訪問
-        fetch('/ai/log_visit', {
+        fetch('./log_visit', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -6,7 +6,7 @@
     <title>使用說明 - AI 文本問答系統</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.4.1/dist/typography.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/ai/css/styles.css">
+    <link rel="stylesheet" href="./css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* 深色模式樣式 */
@@ -63,11 +63,11 @@
         </div>
     </div>
 
-    <script src="/ai/js/navbar.js"></script>
-    <script src="/ai/js/theme.js"></script>
+    <script src="./js/navbar.js"></script>
+    <script src="./js/theme.js"></script>
     <script>
         // 載入並渲染 Markdown 內容
-        fetch('/ai/docs/help.md')
+        fetch('./docs/help.md')
             .then(response => response.text())
             .then(text => {
                 document.getElementById('content').innerHTML = marked.parse(text);

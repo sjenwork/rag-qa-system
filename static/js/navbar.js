@@ -1,6 +1,6 @@
 // 載入導覽列
 document.addEventListener('DOMContentLoaded', function() {
-    fetch('/ai/components/navbar.html')
+    fetch('./components/navbar.html')
         .then(response => response.text())
         .then(html => {
             // 插入導覽列
